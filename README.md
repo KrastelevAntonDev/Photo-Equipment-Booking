@@ -13,10 +13,13 @@ Photo-Equipment-Booking
 │  │  └─ index.ts
 │  ├─ controllers
 │  │  ├─ index.ts
-│  │  ├─ UserController.ts
-│  │  └─ UserDTO.ts
+│  │  └─ UserController.ts
+│  ├─ dtos
+│  │  └─ User
+│  │     └─ CreateUserDTO.ts
 │  ├─ middlewares
-│  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  └─ validation.ts
 │  ├─ models
 │  │  ├─ index.ts
 │  │  └─ User.ts
