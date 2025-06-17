@@ -9,7 +9,6 @@ export function validateDTO(dtoClass: any) {
     if (errors.length) {
       res.status(400).json(errors);
     }
-    // сохраняем уже типизированный объект в req
     req.body = dto;
     next();
   };
