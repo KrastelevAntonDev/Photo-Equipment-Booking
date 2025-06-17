@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Backend project for booking photo studios and equipment written in node js express, mongo db",
   "main": "index.js",
-  "scripts": {  
-    "build": "tsc",  
-    "start": "node dist/index.js",  
-    "dev": "nodemon src/index.ts"  
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "nodemon src/app.ts"
   },
   "repository": {
     "type": "git",
@@ -21,13 +21,14 @@
   },
   "homepage": "https://github.com/KrastelevAntonDev/Photo-Equipment-Booking#readme",
   "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "mongoose": "^8.16.0"
+    "mongodb": "^6.17.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
-    "@types/mongoose": "^5.11.96",
     "@types/node": "^24.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
