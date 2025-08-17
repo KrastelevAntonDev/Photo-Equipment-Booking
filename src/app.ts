@@ -184,11 +184,11 @@ app.get('/health', (_req, res) => {
 // --------------------------------------------------
 // API Routes
 // --------------------------------------------------
-app.use('/api/users', userRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/equipment', equipmentRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/auth', authRoutes);
+app.use('', userRoutes);
+app.use('', roomRoutes);
+app.use('', equipmentRoutes);
+app.use('', bookingRoutes);
+app.use('', authRoutes);
 
 // --------------------------------------------------
 // 404 Handler
