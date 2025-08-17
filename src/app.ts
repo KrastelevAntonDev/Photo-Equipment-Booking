@@ -47,43 +47,47 @@ const app = express();
 // --------------------------------------------------
 // CORS Configuration
 // --------------------------------------------------
-const allowedOrigins = (process.env.CORS_ORIGINS || '')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
+// const allowedOrigins = (process.env.CORS_ORIGINS || '')
+//   .split(',')
+//   .map(o => o.trim())
+//   .filter(Boolean);
 
-const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
-    // Allow mobile apps / curl / server-to-server (no origin)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'X-Requested-With',
-    'x-client-version'
-  ],
-  exposedHeaders: ['Content-Disposition'],
-  maxAge: 600
-};
-app.use(cors(corsOptions));
+// const corsOptions: CorsOptions = {
+//   origin: (origin, callback) => {
+//     // Allow mobile apps / curl / server-to-server (no origin)
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+//     return callback(new Error('Not allowed by CORS'));
+//   },
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: [
+//     'Content-Type',
+//     'Authorization',
+//     'Accept',
+//     'X-Requested-With',
+//     'x-client-version'
+//   ],
+//   exposedHeaders: ['Content-Disposition'],
+//   maxAge: 600
+// };
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 // Optional: handle preflight quickly
-app.options('*', cors(corsOptions));
+// app.options('*', cors(corsOptions));
 
 // --------------------------------------------------
 // Security & Performance Middlewares
 // --------------------------------------------------
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
+// app.use(helmet({
+//   crossOriginResourcePolicy: { policy: 'cross-origin' }
+// }));
 app.use(compression());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
