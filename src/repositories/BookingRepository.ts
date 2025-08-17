@@ -34,6 +34,8 @@ export class BookingRepository {
       return null;
     }
     const _id = new ObjectId(id);
+		console.log(_id);
+		
     return this.getCollection().findOne({ roomId: _id });
   }
 
