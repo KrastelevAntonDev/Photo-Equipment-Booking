@@ -1,0 +1,32 @@
+import { Request, Response } from 'express';
+import { AuthService } from '../services/AuthService';
+
+export class AuthController {
+  private authService: AuthService;
+
+  constructor() {
+    this.authService = new AuthService();
+  }
+
+  async register(req: Request, res: Response) {
+    try {
+      const { email, password, phone } = req.body;
+      const user = await this.authService.register(email, password, phone);
+      res.status(201).json({ message: 'User registered', user });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ message: errorMessage });
+    }
+  }
+
+  async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+      const { token, user } = await this.authService.login(email, password);
+      res.json({ token, user });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ message: errorMessage });
+    }
+  }
+}

@@ -14,7 +14,8 @@ export class UserController {
       const users = await this.userService.getAllUsers();
       res.json(users);
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
     }
   }
   async createUser(req: Request, res: Response) {
@@ -23,7 +24,8 @@ export class UserController {
       const newUser = await this.userService.createUser(user);
       res.status(201).json(newUser);
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
     }
   }
 }

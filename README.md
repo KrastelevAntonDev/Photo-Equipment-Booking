@@ -3,6 +3,7 @@ Backend project for booking photo studios and equipment written in node js expre
 
 ```
 Photo-Equipment-Booking
+├─ .editorconfig
 ├─ package-lock.json
 ├─ package.json
 ├─ README.md

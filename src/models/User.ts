@@ -1,4 +1,17 @@
+import { ObjectId } from 'mongodb';
+
 export interface User {
-  _id?: string;
+  _id?: ObjectId;                 // появится после insertOne
   email: string;
+  passwordHash: string;
+  phone?: string;
+  favoriteRoomIds?: ObjectId[];   // если хранишь ссылки на другие документы
+  balance: number;
+  points: number;
+  bookings: ObjectId[];           // ссылки на бронирования
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt?: Date;
+  lastBookingAt?: Date;
+  isDeleted?: boolean;
 }
