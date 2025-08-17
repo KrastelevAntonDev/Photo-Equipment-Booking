@@ -8,6 +8,8 @@ const bookingController = new BookingController();
 
 router.get('/bookings', (req, res) => bookingController.getAllBookings(req, res));
 router.post('/bookings', validateDTO(CreateBookingDTO), (req, res) => bookingController.createBooking(req, res));
-// router.get('/bookings/:id', (req, res) => bookingController.getBookingById(req, res));
+router.get('/bookings/:id', (req, res) => {
+	bookingController.getBookingByIdRoom(req, res);
+});
 
 export default router;
