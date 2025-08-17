@@ -54,4 +54,7 @@ export class BookingService {
   async getBookingById(id: string): Promise<Booking | null> {
     return this.bookingRepository.findById(id);
   }
+	async getBookingByIdRoom(id: string): Promise<Booking | null> {
+    return this.bookingRepository.findByIdRoom(id);
+  }
 }

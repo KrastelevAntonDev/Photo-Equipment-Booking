@@ -48,7 +48,7 @@ export class BookingController {
 
   async getBookingByIdRoom(req: Request, res: Response) {
     try {
-      const room = await this.roomService.getRoomById(req.params.id);
+      const room = await this.bookingService.getBookingByIdRoom(req.params.id);
       if (!room) {
         return res.status(404).json({ message: 'Room not found' });
       }

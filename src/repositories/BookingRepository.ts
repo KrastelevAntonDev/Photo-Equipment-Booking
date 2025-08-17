@@ -29,6 +29,14 @@ export class BookingRepository {
 		return this.getCollection().findOne({ _id });
 	}
 
+  async findByIdRoom(id: string): Promise<Booking | null> {
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+    const _id = new ObjectId(id);
+    return this.getCollection().findOne({ roomId: _id });
+  }
+
   async findOverlap(roomId: string, start: Date, end: Date): Promise<Booking[]> {
     return this.getCollection().find({
       roomId: new ObjectId(roomId),
