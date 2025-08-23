@@ -10,6 +10,7 @@ export function validateDTO(dtoClass: any) {
     const errors = await validate(dto, { whitelist: true });
     if (errors.length) {
       res.status(400).json(errors);
+    return;
     }
     req.body = dto;
     next();
