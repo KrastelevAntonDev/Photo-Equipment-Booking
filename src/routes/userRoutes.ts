@@ -6,8 +6,14 @@ import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 const userController = new UserController();
-router.get('/profile', authMiddleware, (req, res) => userController.getUserProfile(req, res));
-router.get('/users', (req, res) => userController.getAllUsers(req, res));
-router.post('/user', validateDTO(CreateUserDTO), (req, res) => userController.createUser(req, res));
+router.get('/profile', authMiddleware, (req, res) => {
+	userController.getUserProfile(req, res);
+});
+router.get('/users', (req, res) => {
+	userController.getAllUsers(req, res);
+});
+router.post('/user', validateDTO(CreateUserDTO), (req, res) => {
+	userController.createUser(req, res);
+});
 
 export default router;
