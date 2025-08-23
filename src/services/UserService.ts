@@ -7,7 +7,9 @@ export class UserService {
   constructor() {
     this.userRepository = new UserRepository();
   }
-
+  async getUserProfile(id:string): Promise<User | null> {
+    return this.userRepository.getUser(id);
+  }
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.findAll();
   }

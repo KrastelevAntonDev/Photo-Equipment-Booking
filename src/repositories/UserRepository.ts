@@ -11,7 +11,14 @@ export class UserRepository {
     }
     return this.collection;
   }
-
+  async getUser(id: string): Promise<User | null> {
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+    const _id = new ObjectId(id);
+    return this.getCollection().findOne({ _id });
+  }
+  
   async findAll(): Promise<User[]> {
     return this.getCollection().find().toArray();
   }

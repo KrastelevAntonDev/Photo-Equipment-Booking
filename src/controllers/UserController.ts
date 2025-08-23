@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/UserService';
-import { User } from '../models/User';
+import { User, UserJwtPayload } from '../models/User';
 
 export class UserController {
   private userService: UserService;
@@ -8,7 +8,24 @@ export class UserController {
   constructor() {
     this.userService = new UserService();
   }
-
+  async getUserProfile(req: Request & { user?: UserJwtPayload }, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      console.log(req.user);
+      
+      const userId = req.user.userId;
+      const user = await this.userService.getUserProfile(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.json(user);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
   async getAllUsers(req: Request, res: Response) {
     try {
       const users = await this.userService.getAllUsers();
