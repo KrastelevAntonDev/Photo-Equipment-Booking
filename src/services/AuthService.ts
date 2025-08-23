@@ -12,7 +12,7 @@ export class AuthService {
     this.userRepository = new UserRepository();
   }
 
-  async register(email: string, password: string, phone?: string): Promise<User> {
+  async register(email: string, password: string, phone?: string): Promise<{status: boolean}> {
     const existing = await this.userRepository.findByEmail(email);
     if (existing) throw new Error('User already exists');
     const passwordHash = await bcrypt.hash(password, 10);
@@ -30,7 +30,7 @@ export class AuthService {
     return await this.userRepository.createUser(user);
   }
 
-  async login(email: string, password: string): Promise<{ token: string; user: User }> {
+  async login(email: string, password: string): Promise<{ token: string; }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) throw new Error('User not found');
     const valid = await bcrypt.compare(password, user.passwordHash);
@@ -41,7 +41,7 @@ export class AuthService {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
-    return { token, user };
+    return { token };
   }
 
   verifyToken(token: string): any {

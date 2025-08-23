@@ -13,8 +13,7 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.findAll();
   }
-  async createUser(user: User): Promise<User> {
-    
+  async createUser(user: User): Promise<{status: boolean}> {
     return this.userRepository.createUser(user);
   }
 }

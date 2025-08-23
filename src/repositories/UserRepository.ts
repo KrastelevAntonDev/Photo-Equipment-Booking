@@ -23,15 +23,12 @@ export class UserRepository {
     return this.getCollection().find().toArray();
   }
 
-  async createUser(user: Omit<User, '_id'>): Promise<User> {
+  async createUser(user: User): Promise<{status: boolean}> {
     const now = new Date();
-    const doc = {
-      ...user,
-      createdAt: now,
-      updatedAt: now,
-    };
-    const result = await this.getCollection().insertOne(doc as any);
-    return { ...(doc as any), _id: result.insertedId };
+
+    const result = await this.getCollection().insertOne(user);
+
+    return { status: result.acknowledged };
   }
 
   async findByEmail(email: string): Promise<User | null> {
