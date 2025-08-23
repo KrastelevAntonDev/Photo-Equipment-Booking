@@ -14,7 +14,7 @@ import roomRoutes from './routes/roomRoutes';
 import equipmentRoutes from './routes/equipmentRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import authRoutes from './routes/authRoutes';
-
+import formRoutes from './routes/formRoutes'
 // --------------------------------------------------
 // Environment
 // --------------------------------------------------
@@ -189,6 +189,7 @@ app.use('', roomRoutes);
 app.use('', equipmentRoutes);
 app.use('', bookingRoutes);
 app.use('', authRoutes);
+app.use('', formRoutes);
 
 // --------------------------------------------------
 // 404 Handler
