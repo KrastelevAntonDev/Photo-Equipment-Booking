@@ -20,7 +20,12 @@ export class UserController {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      res.json(user);
+      //remove passwordHash
+      const json = {
+        ...user,
+        passwordHash: undefined
+      }
+      res.json(json);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       res.status(500).json({ message: errorMessage });
