@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ message: 'No token provided' });
+    // res.status(401).json({ message: 'No token provided' });
     return;
   }
   const token = authHeader.split(' ')[1];
@@ -15,7 +15,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     (req as any).user = decoded;
     next();
   } catch {
-    res.status(401).json({ message: 'Invalid token' });
+    // res.status(401).json({ message: 'Invalid token' });
     return;
   }
 }
