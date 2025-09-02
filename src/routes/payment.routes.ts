@@ -3,7 +3,7 @@ import { YooKassaService } from '../services/yookassa.service';
 import { CreatePaymentRequest, Currency, ConfirmationType, PaymentStatus } from '../types/yookassa.types';
 
 const router = Router();
-const yookassaService = new YooKassaService(process.env.YOOKASSA_SHOP_ID!, process.env.YOOKASSA_SECRET_KEY!);
+const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SECRET_KEY!);
 
 // Create payment
 router.post('/payments', async (req: Request, res: Response) => {
