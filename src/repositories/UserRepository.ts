@@ -24,8 +24,6 @@ export class UserRepository {
   }
 
   async createUser(user: User): Promise<{status: boolean}> {
-    const now = new Date();
-
     const result = await this.getCollection().insertOne(user);
 
     return { status: result.acknowledged };

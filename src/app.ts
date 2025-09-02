@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import multer from 'multer';
+import YooKassa from "yookassa";
 
 import { connectDB } from './config/database';
 import userRoutes from './routes/userRoutes';
@@ -33,6 +34,10 @@ dotenv.config();
 // --------------------------------------------------
 const app = express();
 
+const yooKassa = new YooKassa({
+  shopId: process.env.SHOP_ID,
+  secretKey: process.env.SECRET_KEY
+});
 // --------------------------------------------------
 // Database Connection with Retry
 // --------------------------------------------------
@@ -193,6 +198,57 @@ app.use('', bookingRoutes);
 app.use('', authRoutes);
 app.use('', formRoutes);
 app.use('', subscribeRoutes);
+app.post('/create-payment', async (req, res) => {
+  const { amount, description } = req.body;
+
+  try {
+    const payment = await yooKassa.createPayment({
+      amount: {
+        value: amount.toFixed(2), 
+        currency: 'RUB'
+      },
+      payment_method_data: {
+        type: 'sbp' 
+      },
+      confirmation: {
+        type: 'qr' 
+      },
+      capture: true, 
+      description: description || 'Оплата заказа'
+    });
+
+    res.json({
+      paymentId: payment.id,
+      status: payment.status,
+      confirmation: payment.confirmation 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка создания платежа' });
+  }
+});
+
+app.post('/webhook', async (req, res) => {
+  const event = req.body;
+
+  try {
+    console.log('Получено уведомление:', event);
+
+    if (event.event === 'payment.succeeded') {
+      const payment = event.object;
+      console.log(`Платеж ${payment.id} успешен на сумму ${payment.amount.value} RUB`);
+    } else if (event.event === 'payment.canceled') {
+      console.log('Платеж отменен');
+    } else if (event.event === 'payment.waiting_for_capture') {
+      await yooKassa.capturePayment(event.object.id);
+    }
+
+    res.status(200).send(); 
+  } catch (error) {
+    console.error(error);
+    res.status(400).send();
+  }
+});
 
 // --------------------------------------------------
 // 404 Handler

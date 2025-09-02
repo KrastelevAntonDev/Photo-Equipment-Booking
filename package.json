@@ -32,7 +32,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",
     "morgan": "^1.10.1",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "yookassa": "^0.1.1"
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
