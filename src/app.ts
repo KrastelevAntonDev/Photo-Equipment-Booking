@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import YooKassa from "yookassa";
+import YooKassa from "./lib/yookassa";
 
 import { connectDB } from './config/database';
 import userRoutes from './routes/userRoutes';
@@ -35,8 +35,8 @@ dotenv.config();
 const app = express();
 
 const yooKassa = new YooKassa({
-  shopId: process.env.SHOP_ID,
-  secretKey: process.env.SECRET_KEY
+  shopId: process.env.SHOP_ID || '',
+  secretKey: process.env.SECRET_KEY || ''
 });
 // --------------------------------------------------
 // Database Connection with Retry
@@ -240,7 +240,7 @@ app.post('/webhook', async (req, res) => {
     } else if (event.event === 'payment.canceled') {
       console.log('Платеж отменен');
     } else if (event.event === 'payment.waiting_for_capture') {
-      await yooKassa.capturePayment(event.object.id);
+      await yooKassa.capturePayment(event.object.id, event.object.amount.value);
     }
 
     res.status(200).send(); 
