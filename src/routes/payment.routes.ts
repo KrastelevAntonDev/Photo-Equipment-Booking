@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { YooKassaService } from '../services/yookassa.service';
 import { CreatePaymentRequest, Currency, ConfirmationType, PaymentStatus } from '../types/yookassa.types';
+import dotenv from 'dotenv';
 
 const router = Router();
+dotenv.config();
 const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SECRET_KEY!);
 
 // Create payment

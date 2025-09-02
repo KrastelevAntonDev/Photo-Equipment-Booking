@@ -2,9 +2,11 @@ import { Router, Request, Response } from 'express';
 import { YooKassaService } from '../services/yookassa.service';
 import { WebhookNotification, WebhookEventType, Payment, Refund, PaymentStatus } from '../types/yookassa.types';
 import * as net from 'net'; // For IP validation
+import dotenv from 'dotenv';
 
 const router = Router();
-const yookassaService = new YooKassaService(process.env.YOOKASSA_SHOP_ID!, process.env.YOOKASSA_SECRET_KEY!);
+dotenv.config();
+const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SECRET_KEY!);
 
 // Known YooKassa IP ranges (update as per docs)
 const YOOKASSA_IPS = [
