@@ -196,8 +196,8 @@ app.use('', bookingRoutes);
 app.use('', authRoutes);
 app.use('', formRoutes);
 app.use('', subscribeRoutes);
-app.use('/api', paymentRoutes);
-app.use('/yookassa', webhookRoutes);
+app.use('', paymentRoutes);
+app.use('', webhookRoutes);
 
 
 
