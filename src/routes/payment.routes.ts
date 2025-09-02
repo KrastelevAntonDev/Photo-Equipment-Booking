@@ -24,6 +24,8 @@ router.post('/payments', async (req: Request, res: Response) => {
       metadata: req.body.metadata,
       // Add other fields from req.body as needed
     };
+		console.log(payload);
+		
     const payment = await yookassaService.createPayment(payload);
     res.status(201).json(payment);
   } catch (err: any) {
