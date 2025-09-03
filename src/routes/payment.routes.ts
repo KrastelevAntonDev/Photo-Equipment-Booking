@@ -22,6 +22,24 @@ router.post('/payments', async (req: Request, res: Response) => {
       capture: req.body.capture ?? true,
       description: req.body.description || 'Payment for order',
       metadata: req.body.metadata,
+      receipt: {
+        items: [{
+          description: 'test',
+          amount: {
+            value: req.body.amount || '100.00',
+            currency: Currency.RUB,
+          },
+          quantity: 1,
+          vat_code: 4,
+          payment_subject: 'commodity',
+          payment_mode: 'full_prepayment'
+        }],
+        customer: {
+          full_name: 'Test Name',
+          email: 'test@example.com',
+          phone: '+1234567890'
+        }
+      }
       // Add other fields from req.body as needed
     };
 		console.log(payload);

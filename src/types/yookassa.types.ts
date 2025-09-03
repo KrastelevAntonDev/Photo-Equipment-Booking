@@ -198,7 +198,7 @@ export interface Receipt {
 
 export interface ReceiptItem {
   description: string;
-  quantity: string; // Decimal string
+  quantity: number;
   amount: Amount;
   vat_code: 1 | 2 | 3 | 4 | 5 | 6;
   payment_subject: 'commodity' | 'excise' | 'job' | 'service' | 'gambling_bet' | 'gambling_prize' | 'lottery' | 'lottery_prize' | 'intellectual_activity' | 'payment' | 'agent_commission' | 'composite' | 'another';
