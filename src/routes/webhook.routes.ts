@@ -39,7 +39,8 @@ router.post('/webhook', (async (req: Request, res: Response) => {
   }
 
   const notification: WebhookNotification = req.body;
-
+  console.log(req.body);
+  
   if (notification.type !== 'notification') {
     return res.status(400).send('Invalid notification type');
   }
