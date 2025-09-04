@@ -19,6 +19,10 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
      res.status(400).json({ message: 'Amount is required' });
      return
   }
+  if(!req.body.bookingId) {
+      res.status(400).json({ message: 'Booking ID is required' });
+      return
+  }
   try {
     const payload: CreatePaymentRequest = {
       amount: {
@@ -33,6 +37,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       description: req.body.description || 'Payment for order',
       metadata: {
         userId: req.user.userId,
+        bookingId: req.body.bookingId
       },
       receipt: {
         items: [{
