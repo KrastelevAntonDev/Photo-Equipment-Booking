@@ -12,10 +12,12 @@ const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SE
 // Create payment
 router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwtPayload }, res: Response) => {
   if(!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    res.status(401).json({ message: 'Unauthorized' });
+    return
   }
   if(!req.body.amount) {
-    return res.status(400).json({ message: 'Amount is required' });
+     res.status(400).json({ message: 'Amount is required' });
+     return
   }
   try {
     const payload: CreatePaymentRequest = {
