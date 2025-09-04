@@ -15,7 +15,7 @@ router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, re
 router.get('/bookings/:id', (req, res) => {
 	bookingController.getBookingByIdRoom(req, res);
 });
-router.get('/bookings/busy-slots', (req, res) => {
+router.get('/booking/busy-slots', (req, res) => {
 	bookingController.getBusySlots(req, res);
 });
 export default router;	
