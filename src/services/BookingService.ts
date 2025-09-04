@@ -44,7 +44,6 @@ export class BookingService {
         if (!eq) throw new Error(`Equipment not found: ${eqId}`);
       }
     }
-    console.log(booking.equipmentIds);
     
     // Проверка пересечения времени бронирования для зала
     const overlap = await this.bookingRepository.findOverlap(booking.roomId.toString(), booking.start, booking.end);
@@ -53,7 +52,7 @@ export class BookingService {
     
     // Создаем бронирование
     const equipmentIds = booking.equipmentIds ? booking.equipmentIds.map(id => new ObjectId(id)) : [];
-		const newBody = { ...booking, status: 'pending', roomId: new ObjectId(booking.roomId), userId: new ObjectId(userId), equipmentIds } as Booking;
+		const newBody = { ...booking, status: 'pending', roomId: new ObjectId(booking.roomId), userId: new ObjectId(userId), equipmentIds, createdAt: new Date(), updatedAt: new Date(), start: new Date(booking.start), end: new Date(booking.end) } as Booking;
     const newBooking = await this.bookingRepository.createBooking(newBody);
 
     // Интеграция с пользователем — добавляем bookingId в user.bookings
@@ -72,8 +71,8 @@ export class BookingService {
   const bookings = await this.bookingRepository.findBusySlots(roomId, rangeStart, rangeEnd);
   return bookings.map(b => ({
       roomId: b.roomId.toString(),
-      start: b.start.toISOString(),
-      end: b.end.toISOString(),
+      start: b.start,
+      end: b.end,
       status: b.status as 'pending' | 'confirmed'
     }));
   }

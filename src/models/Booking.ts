@@ -18,8 +18,8 @@ export interface Booking {
 
 export interface BusySlot {
   roomId: string;
-  start: string; // ISO 8601
-  end: string;   // ISO 8601
+  start: Date; // ISO 8601
+  end: Date;   // ISO 8601
   status: 'pending' | 'confirmed';
 };
 

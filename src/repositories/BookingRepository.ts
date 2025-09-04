@@ -53,21 +53,24 @@ export class BookingRepository {
     return this.getCollection().findOne({ roomId: _id });
   }
 
-  async findOverlap(roomId: string, start: Date, end: Date): Promise<Booking[]> {
+  async findOverlap(roomId: string, start: any, end: any): Promise<Booking[]> {
     return this.getCollection().find({
       roomId: new ObjectId(roomId),
       $or: [
-        { start: { $lt: end }, end: { $gt: start } }, // Пересечение
+        { start: { $lt: new Date(end) }, end: { $gt: new Date(start) } }, // Пересечение
       ],
       status: { $in: ['pending', 'confirmed'] }
     }).toArray();
   }
-  async findBusySlots(roomId: string, rangeStart: Date, rangeEnd: Date): Promise<Booking[]> {
-    return this.getCollection().find({
+  async findBusySlots(roomId: string, rangeStart: any, rangeEnd: any): Promise<Booking[]> {
+    const bookings = await this.getCollection().find({
       roomId: new ObjectId(roomId),
       status: { $in: ['pending', 'confirmed'] },
-      start: { $lt: rangeEnd },
-      end: { $gt: rangeStart }
+        $or: [
+          { start: { $lt: new Date(rangeEnd) }, end: { $gt: new Date(rangeStart) } }, // Пересечение
+        ],
     }).toArray();
+
+    return bookings;
   }
 }
