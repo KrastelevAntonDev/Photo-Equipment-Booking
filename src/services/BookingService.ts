@@ -28,11 +28,13 @@ export class BookingService {
     const userId = booking.user.userId;
     const user = await this.userRepository.findById(userId.toString());
     if (!user) throw new Error('User not found');
-
+    console.log(user);
+    
     // Проверка зала
     const room = await this.roomRepository.findById(booking.roomId.toString());
     if (!room) throw new Error('Room not found');
-
+    console.log(room);
+    
     // Проверка оборудования
     if (booking.equipmentIds && booking.equipmentIds.length) {
       for (const eqId of booking.equipmentIds) {
@@ -40,11 +42,13 @@ export class BookingService {
         if (!eq) throw new Error(`Equipment not found: ${eqId}`);
       }
     }
-
+    console.log(booking.equipmentIds);
+    
     // Проверка пересечения времени бронирования для зала
     const overlap = await this.bookingRepository.findOverlap(booking.roomId.toString(), booking.start, booking.end);
     if (overlap.length > 0) throw new Error('Room already booked for this time');
-
+    console.log(overlap);
+    
     // Создаем бронирование
     const equipmentIds = booking.equipmentIds ? booking.equipmentIds.map(id => new ObjectId(id)) : [];
 		const newBody = { ...booking, status: 'pending', roomId: new ObjectId(booking.roomId), userId: new ObjectId(booking.userId), equipmentIds } as Booking;
