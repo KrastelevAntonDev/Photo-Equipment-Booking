@@ -59,4 +59,20 @@ export class BookingController {
       res.status(500).json({ message: errorMessage });
     }
   }
+  async getBusySlots(req: Request, res: Response) {
+  try {
+    const { roomId, start, end } = req.query;
+    if (!roomId || !start || !end) {
+      return res.status(400).json({ message: 'roomId, start, end required' });
+    }
+    const slots = await this.bookingService.getBusySlots(
+      roomId as string,
+      new Date(start as string),
+      new Date(end as string)
+    );
+    res.json(slots);
+  } catch (error) {
+    res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
+  }
+}
 }

@@ -29,4 +29,15 @@ export class AuthController {
       res.status(400).json({ message: errorMessage });
     }
   }
+
+  async adminLogin(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+      const { token } = await this.authService.adminLogin(email, password);
+      res.json({ token });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ message: errorMessage });
+    }
+  }
 }

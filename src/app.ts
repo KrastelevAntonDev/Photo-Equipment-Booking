@@ -17,6 +17,10 @@ import authRoutes from './routes/authRoutes';
 import formRoutes from './routes/formRoutes'
 import subscribeRoutes from './routes/subscribeRoutes';
 
+
+import { seedAdmins } from './seed/admin.seed';
+
+
 // --------------------------------------------------
 // Environment
 // --------------------------------------------------
@@ -33,14 +37,16 @@ dotenv.config();
 // --------------------------------------------------
 const app = express();
 
-
 // --------------------------------------------------
 // Database Connection with Retry
 // --------------------------------------------------
 (async () => {
   try {
     await connectDB();
+
     console.log('✅ Database connected');
+    await seedAdmins();
+
   } catch (err) {
     console.error('❌ Initial DB connection failed:', err);
     process.exit(1);

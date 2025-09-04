@@ -1,4 +1,5 @@
 import { UserRepository } from '../repositories/UserRepository';
+import { AdminRepository } from '../repositories/admin.repository';
 import { User } from '../models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -7,9 +8,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 export class AuthService {
   private userRepository: UserRepository;
-
+  private adminRepository: AdminRepository;
   constructor() {
     this.userRepository = new UserRepository();
+    this.adminRepository = new AdminRepository();
   }
 
   async register(email: string, password: string, phone?: string): Promise<{status: boolean}> {
@@ -37,6 +39,18 @@ export class AuthService {
     if (!valid) throw new Error('Invalid password');
     const token = jwt.sign(
       { userId: user._id, email: user.email, phone: user.phone },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    return { token };
+  }
+  async adminLogin(email: string, password: string): Promise<{ token: string; }> {
+    const admin = await this.adminRepository.findByEmail(email);
+    if (!admin) throw new Error('Admin not found');
+    const valid = await bcrypt.compare(password, admin.passwordHash);
+    if (!valid) throw new Error('Invalid password');
+    const token = jwt.sign(
+      { userId: admin._id, email: admin.email, phone: admin.phone },
       JWT_SECRET,
       { expiresIn: '24h' }
     );

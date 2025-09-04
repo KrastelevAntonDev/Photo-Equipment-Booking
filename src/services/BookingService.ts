@@ -1,5 +1,5 @@
 import { BookingRepository } from '../repositories/BookingRepository';
-import { Booking, BookingWithUser } from '../models/Booking';
+import { Booking, BookingWithUser, BusySlot } from '../models/Booking';
 import { UserRepository } from '../repositories/UserRepository';
 import { RoomRepository } from '../repositories/RoomRepository';
 import { EquipmentRepository } from '../repositories/EquipmentRepository';
@@ -67,5 +67,14 @@ export class BookingService {
   }
 	async getBookingByIdRoom(id: string): Promise<Booking | null> {
     return this.bookingRepository.findByIdRoom(id);
+  }
+  async getBusySlots(roomId: string, rangeStart: Date, rangeEnd: Date): Promise<BusySlot[]> {
+  const bookings = await this.bookingRepository.findBusySlots(roomId, rangeStart, rangeEnd);
+  return bookings.map(b => ({
+      roomId: b.roomId.toString(),
+      start: b.start.toISOString(),
+      end: b.end.toISOString(),
+      status: b.status as 'pending' | 'confirmed'
+    }));
   }
 }

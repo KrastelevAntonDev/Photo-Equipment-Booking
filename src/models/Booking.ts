@@ -16,6 +16,11 @@ export interface Booking {
   isDeleted?: boolean;
 }
 
-
+export interface BusySlot {
+  roomId: string;
+  start: string; // ISO 8601
+  end: string;   // ISO 8601
+  status: 'pending' | 'confirmed';
+};
 
 export type BookingWithUser = Booking & {user: UserJwtPayload};

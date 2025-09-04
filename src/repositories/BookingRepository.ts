@@ -62,4 +62,12 @@ export class BookingRepository {
       status: { $in: ['pending', 'confirmed'] }
     }).toArray();
   }
+  async findBusySlots(roomId: string, rangeStart: Date, rangeEnd: Date): Promise<Booking[]> {
+    return this.getCollection().find({
+      roomId: new ObjectId(roomId),
+      status: { $in: ['pending', 'confirmed'] },
+      start: { $lt: rangeEnd },
+      end: { $gt: rangeStart }
+    }).toArray();
+  }
 }
