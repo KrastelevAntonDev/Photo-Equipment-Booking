@@ -51,7 +51,7 @@ export class BookingService {
     
     // Создаем бронирование
     const equipmentIds = booking.equipmentIds ? booking.equipmentIds.map(id => new ObjectId(id)) : [];
-		const newBody = { ...booking, status: 'pending', roomId: new ObjectId(booking.roomId), userId: new ObjectId(booking.userId), equipmentIds } as Booking;
+		const newBody = { ...booking, status: 'pending', roomId: new ObjectId(booking.roomId), userId: new ObjectId(userId), equipmentIds } as Booking;
     const newBooking = await this.bookingRepository.createBooking(newBody);
 
     // Интеграция с пользователем — добавляем bookingId в user.bookings
