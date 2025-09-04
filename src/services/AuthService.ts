@@ -35,9 +35,8 @@ export class AuthService {
     if (!user) throw new Error('User not found');
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('Invalid password');
-    // Не кладем passwordHash в возвращаемого user!
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, phone: user.phone },
       JWT_SECRET,
       { expiresIn: '24h' }
     );

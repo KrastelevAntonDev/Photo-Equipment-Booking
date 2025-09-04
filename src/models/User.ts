@@ -19,6 +19,7 @@ export interface User {
 export interface UserJwtPayload {
   userId: string;
   email: string;
+  phone: string;
   iat: number;
   exp: number;
 }

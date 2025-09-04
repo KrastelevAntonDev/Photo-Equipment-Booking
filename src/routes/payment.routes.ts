@@ -2,48 +2,53 @@ import { Router, Request, Response } from 'express';
 import { YooKassaService } from '../services/yookassa.service';
 import { CreatePaymentRequest, Currency, ConfirmationType, PaymentStatus } from '../types/yookassa.types';
 import dotenv from 'dotenv';
+import { authMiddleware } from '../middlewares/authMiddleware';
+import { UserJwtPayload } from '../models/User';
 
 const router = Router();
 dotenv.config();
 const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SECRET_KEY!);
 
 // Create payment
-router.post('/payments', async (req: Request, res: Response) => {
+router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwtPayload }, res: Response) => {
+  if(!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  if(!req.body.amount) {
+    return res.status(400).json({ message: 'Amount is required' });
+  }
   try {
     const payload: CreatePaymentRequest = {
       amount: {
-        value: req.body.amount || '100.00',
+        value: req.body.amount,
         currency: Currency.RUB,
       },
       confirmation: {
         type: ConfirmationType.Redirect,
-        return_url: req.body.return_url || 'https://your-site.com/return',
+        return_url: req.body.return_url || 'http://picassostudio.ru/',
       },
       capture: req.body.capture ?? true,
       description: req.body.description || 'Payment for order',
       metadata: req.body.metadata,
       receipt: {
         items: [{
-          description: 'test',
+          description: req.body.description || 'Payment for order',
           amount: {
-            value: req.body.amount || '100.00',
+            value: req.body.amount,
             currency: Currency.RUB,
           },
           quantity: 1,
-          vat_code: 4,
-          payment_subject: 'commodity',
-          payment_mode: 'full_prepayment'
+          vat_code: 1,
+          payment_subject: 'service',
+          payment_mode: 'full_payment'
         }],
         customer: {
-          full_name: 'Test Name',
-          email: 'test@example.com',
-          phone: '+1234567890'
+          email: req.user.email,
+          phone: req.user.phone,
         }
       }
       // Add other fields from req.body as needed
     };
-		console.log(payload);
-		
     const payment = await yookassaService.createPayment(payload);
     res.status(201).json(payment);
   } catch (err: any) {
