@@ -55,7 +55,7 @@ export class BookingService {
     const newBooking = await this.bookingRepository.createBooking(newBody);
 
     // Интеграция с пользователем — добавляем bookingId в user.bookings
-    await this.userRepository.addBookingToUser(booking.userId.toString(), newBooking._id!.toString());
+    await this.userRepository.addBookingToUser(userId.toString(), newBooking._id!.toString());
 
     return newBooking;
   }
