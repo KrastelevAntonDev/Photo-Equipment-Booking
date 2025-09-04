@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { UserJwtPayload } from './User';
 	
 
 export interface Booking {
@@ -14,3 +15,7 @@ export interface Booking {
   updatedAt: Date;
   isDeleted?: boolean;
 }
+
+
+
+export type BookingWithUser = Booking & {user: UserJwtPayload};

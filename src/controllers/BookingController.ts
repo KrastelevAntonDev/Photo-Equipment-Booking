@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { BookingService } from '../services/BookingService';
-import { Booking } from '../models/Booking';
+import { Booking, BookingWithUser } from '../models/Booking';
 import { RoomService } from '../services/RoomService';
+import { UserJwtPayload } from '../models/User';
 
 export class BookingController {
   private bookingService: BookingService;
@@ -22,9 +23,9 @@ export class BookingController {
     }
   }
 
-  async createBooking(req: Request, res: Response) {
+  async createBooking(req: Request & {user?: UserJwtPayload}, res: Response) {
     try {
-      const booking: Booking = req.body;
+      const booking: BookingWithUser = { ...req.body, user: req.user };
       const newBooking = await this.bookingService.createBooking(booking);
       res.status(201).json(newBooking);
     } catch (error) {

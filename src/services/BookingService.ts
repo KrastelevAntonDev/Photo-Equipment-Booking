@@ -1,9 +1,10 @@
 import { BookingRepository } from '../repositories/BookingRepository';
-import { Booking } from '../models/Booking';
+import { Booking, BookingWithUser } from '../models/Booking';
 import { UserRepository } from '../repositories/UserRepository';
 import { RoomRepository } from '../repositories/RoomRepository';
 import { EquipmentRepository } from '../repositories/EquipmentRepository';
 import { ObjectId } from 'mongodb';
+import { UserJwtPayload } from '../models/User';
 
 export class BookingService {
   private bookingRepository: BookingRepository;
@@ -22,9 +23,10 @@ export class BookingService {
     return this.bookingRepository.findAll();
   }
 
-  async createBooking(booking: Booking): Promise<Booking> {
+  async createBooking(booking: BookingWithUser): Promise<Booking> {
     // Проверка пользователя
-    const user = await this.userRepository.findById(booking.userId.toString());
+    const userId = booking.user.userId;
+    const user = await this.userRepository.findById(userId.toString());
     if (!user) throw new Error('User not found');
 
     // Проверка зала
