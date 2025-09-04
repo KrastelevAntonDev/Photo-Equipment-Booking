@@ -31,7 +31,9 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       },
       capture: req.body.capture ?? true,
       description: req.body.description || 'Payment for order',
-      metadata: req.body.metadata,
+      metadata: {
+        userId: req.user.userId,
+      },
       receipt: {
         items: [{
           description: req.body.description || 'Payment for order',
