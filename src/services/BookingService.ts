@@ -22,7 +22,9 @@ export class BookingService {
   async getAllBookings(): Promise<Booking[]> {
     return this.bookingRepository.findAll();
   }
-
+  async updateBookingStatus(id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed'): Promise<Booking | null> {
+    return this.bookingRepository.updateStatus(id, status);
+  }
   async createBooking(booking: BookingWithUser): Promise<Booking> {
     // Проверка пользователя
     const userId = booking.user.userId;

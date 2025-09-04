@@ -1,8 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { YooKassaService } from '../services/yookassa.service';
 import { WebhookNotification, WebhookEventType, Payment, Refund, PaymentStatus } from '../types/yookassa.types';
+import { PaymentService } from '../services/payment.service';
 import * as net from 'net'; // For IP validation
 import dotenv from 'dotenv';
+import { ObjectId } from 'mongodb';
+import { BookingService } from '../services/BookingService';
 
 const router = Router();
 dotenv.config();
@@ -31,6 +34,8 @@ function isValidYooKassaIp(ip: string): boolean {
   return false;
 }
 
+const paymentService = new PaymentService();
+const bookingService = new BookingService();
 router.post('/webhook', (async (req: Request, res: Response) => {
   // const clientIp = req.ip || req.connection.remoteAddress || '';
   // if (!isValidYooKassaIp(clientIp)) {
@@ -56,17 +61,48 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         break;
       case WebhookEventType.PaymentSucceeded:
         const paymentSuccess = notification.object as Payment;
-        // Update order status in DB, send email, etc.
+        if(!paymentSuccess.metadata?.bookingId || !paymentSuccess.metadata?.userId) {
+          console.warn('Missing metadata in payment success webhook');
+          break;
+        }
+        paymentService.createPayment({
+          bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
+          userId: new ObjectId(paymentSuccess.metadata.userId),
+          yookassaId: paymentSuccess.id,
+          status: paymentSuccess.status as PaymentStatus,
+          amount: Number(paymentSuccess.amount.value),
+          currency: 'RUB',
+          paid: paymentSuccess.paid,
+          refundable: paymentSuccess.refundable,
+        })
+        if(paymentSuccess.paid === true){
+          bookingService.updateBookingStatus(paymentSuccess.metadata.bookingId, 'confirmed');
+        }
         console.log(`Payment succeeded: ${paymentSuccess.id}`);
         break;
       case WebhookEventType.PaymentCanceled:
         const paymentCancel = notification.object as Payment;
         // Handle cancellation
+        if(!paymentCancel.metadata?.bookingId || !paymentCancel.metadata?.userId) {
+          console.warn('Missing metadata in payment cancel webhook');
+          break;
+        }
+        paymentService.createPayment({
+          bookingId: new ObjectId(paymentCancel.metadata.bookingId),
+          userId: new ObjectId(paymentCancel.metadata.userId),
+          yookassaId: paymentCancel.id,
+          status: paymentCancel.status as PaymentStatus,
+          amount: Number(paymentCancel.amount.value),
+          currency: 'RUB',
+          paid: paymentCancel.paid,
+          refundable: paymentCancel.refundable,
+        })
         console.log(`Payment canceled: ${paymentCancel.id}`);
         break;
       case WebhookEventType.RefundSucceeded:
         const refund = notification.object as Refund;
         // Update refund status
+        
         console.log(`Refund succeeded: ${refund.id}`);
         break;
       default:

@@ -15,7 +15,21 @@ export class BookingRepository {
   async findAll(): Promise<Booking[]> {
     return this.getCollection().find().toArray();
   }
-
+  async updateStatus(
+    id: string,
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
+  ): Promise<Booking | null> {
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+    const _id = new ObjectId(id);
+    return await this.getCollection().findOneAndUpdate(
+      { _id },
+      { $set: { status, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+     
+  }
   async createBooking(booking: Booking): Promise<Booking> {
     const result = await this.getCollection().insertOne(booking);
     return { ...booking, _id: result.insertedId };
