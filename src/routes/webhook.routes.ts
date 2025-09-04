@@ -32,11 +32,11 @@ function isValidYooKassaIp(ip: string): boolean {
 }
 
 router.post('/webhook', (async (req: Request, res: Response) => {
-  const clientIp = req.ip || req.connection.remoteAddress || '';
-  if (!isValidYooKassaIp(clientIp)) {
-    console.warn(`Invalid webhook IP: ${clientIp}`);
-    return res.status(403).send('Forbidden');
-  }
+  // const clientIp = req.ip || req.connection.remoteAddress || '';
+  // if (!isValidYooKassaIp(clientIp)) {
+  //   console.warn(`Invalid webhook IP: ${clientIp}`);
+  //   return res.status(403).send('Forbidden');
+  // }
 
   const notification: WebhookNotification = req.body;
   console.log(req.body);
