@@ -12,6 +12,9 @@ router.get('/profile', authMiddleware, (req, res) => {
 router.get('/users', (req, res) => {
 	userController.getAllUsers(req, res);
 });
+router.get('/users/:id', (req, res) => {
+	userController.getUserByIdRoom(req, res);
+});
 router.post('/user', validateDTO(CreateUserDTO), (req, res) => {
 	userController.createUser(req, res);
 });

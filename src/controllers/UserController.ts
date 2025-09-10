@@ -40,6 +40,15 @@ export class UserController {
       res.status(500).json({ message: errorMessage });
     }
   }
+  async getUserByIdRoom(req: Request, res: Response) {
+        try {
+      const users = await this.userService.getUserProfile(req.params.id);
+      res.json(users);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
   async createUser(req: Request, res: Response) {
     try {
       const user: User = req.body;
