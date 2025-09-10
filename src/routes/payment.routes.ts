@@ -4,11 +4,12 @@ import { CreatePaymentRequest, Currency, ConfirmationType, PaymentStatus } from 
 import dotenv from 'dotenv';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { UserJwtPayload } from '../models/User';
+import { PaymentService } from '../services/payment.service';
 
 const router = Router();
 dotenv.config();
 const yookassaService = new YooKassaService(process.env.SHOP_ID!, process.env.SECRET_KEY!);
-
+const paymentService = new PaymentService()
 // Create payment
 router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwtPayload }, res: Response) => {
   if(!req.user) {
@@ -70,6 +71,14 @@ router.get('/payments/:id', async (req: Request, res: Response) => {
   try {
     const payment = await yookassaService.getPayment(req.params.id);
     res.json(payment);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/payments', async (req: Request, res: Response) => {
+  try {
+    const payments = await paymentService.getAllPayments();
+    res.json(payments);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
