@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { PaymentService } from '../application/payment.service';
 import { Payment } from '../domain/payment.entity';
-import { RoomService } from '../../rooms/application/room.service';
-import { UserJwtPayload } from '../../users/domain/user.entity';
+import { RoomService } from '@modules/rooms/application/room.service';
+import { UserJwtPayload } from '@modules/users/domain/user.entity';
 
 export class PaymentController {
 	private paymentService: PaymentService;

@@ -1,5 +1,5 @@
-import { YooKassaHttpClient } from '../../../../infrastructure/external/yookassa/yookassa.client';
-import { Amount, CreatePaymentRequest, CreateRefundRequest, Payment, Refund, PaymentMethod } from '../../../../infrastructure/external/yookassa/yookassa.types';
+import { YooKassaHttpClient } from '@infrastructure/external/yookassa/yookassa.client';
+import { Amount, CreatePaymentRequest, CreateRefundRequest, Payment, Refund, PaymentMethod } from '@infrastructure/external/yookassa/yookassa.types';
 import { PaymentProvider } from '../../domain/payment.provider';
 
 export class YooKassaProvider implements PaymentProvider {

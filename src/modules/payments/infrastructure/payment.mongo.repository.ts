@@ -1,5 +1,5 @@
 import { Collection, ObjectId } from 'mongodb';
-import { getDB } from '../../../config/database';
+import { getDB } from '@config/database';
 import { Payment } from '../domain/payment.entity';
 import { IPaymentRepository } from '../domain/payment.repository';
 

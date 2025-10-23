@@ -1,5 +1,5 @@
 import { Collection, ObjectId } from 'mongodb';
-import { getDB } from '../../../config/database';
+import { getDB } from '@config/database';
 import { Subscribe } from '../domain/subscription.entity';
 import { ISubscriptionRepository } from '../domain/subscription.repository';
 

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { UserJwtPayload } from '../../modules/users/domain/user.entity';
+import { UserJwtPayload } from '@modules/users/domain/user.entity';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 

@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { CreatePaymentRequest, Currency, ConfirmationType } from '../../../infrastructure/external/yookassa/yookassa.types';
-import { authMiddleware } from '../../../shared/middlewares/auth.middleware';
-import { UserJwtPayload } from '../../users/domain/user.entity';
+import { CreatePaymentRequest, Currency, ConfirmationType } from '@infrastructure/external/yookassa/yookassa.types';
+import { authMiddleware } from '@shared/middlewares/auth.middleware';
+import { UserJwtPayload } from '@modules/users/domain/user.entity';
 import { PaymentService } from '../application/payment.service';
-import { createPaymentProvider } from '../infrastructure/provider.factory';
+import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
 
 const router = Router();
 const yookassaService = createPaymentProvider();

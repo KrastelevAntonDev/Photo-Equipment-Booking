@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { FormController } from './form.controller';
-import { validateDTO } from '../../../shared/middlewares/validation.middleware';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateFormDTO } from './create-form.dto';
 
 const router = Router();

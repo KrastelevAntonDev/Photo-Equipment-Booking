@@ -1,8 +1,8 @@
-import { IUserRepository } from '../../users/domain/user.repository';
-import { UserMongoRepository } from '../../users/infrastructure/user.mongo.repository';
-import { IAdminRepository } from '../../users/domain/admin.repository';
-import { AdminMongoRepository } from '../../users/infrastructure/admin.mongo.repository';
-import { User } from '../../users/domain/user.entity';
+import { IUserRepository } from '@modules/users/domain/user.repository';
+import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.repository';
+import { IAdminRepository } from '@modules/users/domain/admin.repository';
+import { AdminMongoRepository } from '@modules/users/infrastructure/admin.mongo.repository';
+import { User } from '@modules/users/domain/user.entity';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 

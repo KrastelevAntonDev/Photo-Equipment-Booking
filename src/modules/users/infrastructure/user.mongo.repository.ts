@@ -1,5 +1,5 @@
 import { Collection, ObjectId } from 'mongodb';
-import { getDB } from '../../../config/database';
+import { getDB } from '@config/database';
 import { User } from '../domain/user.entity';
 import { IUserRepository } from '../domain/user.repository';
 

@@ -1,5 +1,5 @@
 import { Collection, ObjectId } from 'mongodb';
-import { getDB } from '../../../config/database';
+import { getDB } from '@config/database';
 import { Form, FormType } from '../domain/form.entity';
 import { IFormRepository } from '../domain/form.repository';
 

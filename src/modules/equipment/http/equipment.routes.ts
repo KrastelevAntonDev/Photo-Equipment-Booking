@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { EquipmentController } from './equipment.controller';
-import { validateDTO } from '../../../shared/middlewares/validation.middleware';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateEquipmentDTO } from './create-equipment.dto';
 
 const router = Router();

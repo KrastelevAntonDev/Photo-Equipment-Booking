@@ -8,7 +8,7 @@ import {
   Refund,
   ApiError,
   PaymentMethod,
-} from './yookassa.types';
+} from '@infrastructure/external/yookassa/yookassa.types';
 
 export class YooKassaHttpClient {
   private readonly baseUrl: string = 'https://api.yookassa.ru/v3';

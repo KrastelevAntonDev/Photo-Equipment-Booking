@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { SubscribeController } from './subscription.controller';
-import { validateDTO } from '../../../shared/middlewares/validation.middleware';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateSubscribeDTO } from './create-subscribe.dto';
 
 const router = Router();

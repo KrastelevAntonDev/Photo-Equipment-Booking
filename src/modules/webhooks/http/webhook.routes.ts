@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { WebhookNotification, WebhookEventType, Payment, Refund, PaymentStatus } from '../../../infrastructure/external/yookassa/yookassa.types';
-import { PaymentService } from '../../payments/application/payment.service';
+import { WebhookNotification, WebhookEventType, Payment, Refund, PaymentStatus } from '@infrastructure/external/yookassa/yookassa.types';
+import { PaymentService } from '@modules/payments/application/payment.service';
 import * as net from 'net'; // For IP validation
 import { ObjectId } from 'mongodb';
-import { BookingService } from '../../bookings/application/booking.service';
-import { createPaymentProvider } from '../../payments/infrastructure/provider.factory';
+import { BookingService } from '@modules/bookings/application/booking.service';
+import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
 
 const router = Router();
 const yookassaService = createPaymentProvider();

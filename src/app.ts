@@ -6,13 +6,16 @@ import path from 'path';
 import dotenv from 'dotenv';
 import multer from 'multer';
 
-import { connectDB } from './config/database';
-import routes from './routes';
+import { connectDB } from '@config/database';
+import routes from '@routes';
+import webhookRoutes from '@modules/webhooks/http/webhook.routes';
+import swaggerUi from 'swagger-ui-express';
+import openapiSpec from '@config/swagger';
 
 
 import { seedAdmins } from './seed/admin.seed';
-import { env, isProd } from './config/env';
-import { errorHandler } from './shared/errors/error.middleware';
+import { env, isProd } from '@config/env';
+import { errorHandler } from '@shared/errors/error.middleware';
 
 
 // --------------------------------------------------
@@ -182,7 +185,15 @@ app.get('/health', (_req, res) => {
 // --------------------------------------------------
 // API Routes
 // --------------------------------------------------
-app.use('', routes);
+// API routes under /api, webhook kept at root for provider callbacks
+app.use('/api', routes);
+app.use('', webhookRoutes);
+
+// --------------------------------------------------
+// API Docs (Swagger UI)
+// --------------------------------------------------
+app.get('/api/openapi.json', (_req, res) => res.json(openapiSpec));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
 
 
 

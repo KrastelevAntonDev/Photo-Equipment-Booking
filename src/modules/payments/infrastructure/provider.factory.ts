@@ -1,5 +1,5 @@
-import { env } from '../../../config/env';
-import { PaymentProvider } from '../../payments/domain/payment.provider';
+import { env } from '@config/env';
+import { PaymentProvider } from '@modules/payments/domain/payment.provider';
 import { YooKassaProvider } from './providers/yookassa.provider';
 
 export function createPaymentProvider(): PaymentProvider {

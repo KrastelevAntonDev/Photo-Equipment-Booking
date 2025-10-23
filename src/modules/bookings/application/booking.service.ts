@@ -1,12 +1,12 @@
 import { IBookingRepository } from '../domain/booking.repository';
 import { BookingMongoRepository } from '../infrastructure/booking.mongo.repository';
 import { Booking, BookingWithUser, BusySlot } from '../domain/booking.entity';
-import { IUserRepository } from '../../users/domain/user.repository';
-import { UserMongoRepository } from '../../users/infrastructure/user.mongo.repository';
-import { IRoomRepository } from '../../rooms/domain/room.repository';
-import { RoomMongoRepository } from '../../rooms/infrastructure/room.mongo.repository';
-import { IEquipmentRepository } from '../../equipment/domain/equipment.repository';
-import { EquipmentMongoRepository } from '../../equipment/infrastructure/equipment.mongo.repository';
+import { IUserRepository } from '@modules/users/domain/user.repository';
+import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.repository';
+import { IRoomRepository } from '@modules/rooms/domain/room.repository';
+import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
+import { IEquipmentRepository } from '@modules/equipment/domain/equipment.repository';
+import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
 import { ObjectId } from 'mongodb';
 
 export class BookingService {

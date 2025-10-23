@@ -1,4 +1,4 @@
-import { AdminMongoRepository } from '../modules/users/infrastructure/admin.mongo.repository';
+import { AdminMongoRepository } from '@modules/users/infrastructure/admin.mongo.repository';
 import { hashSync } from 'bcryptjs';
 
 const admins = [

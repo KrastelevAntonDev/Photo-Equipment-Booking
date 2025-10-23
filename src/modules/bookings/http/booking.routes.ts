@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { BookingController } from './booking.controller';
-import { validateDTO } from '../../../shared/middlewares/validation.middleware';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateBookingDTO } from './create-booking.dto';
-import { authMiddleware } from '../../../shared/middlewares/auth.middleware';
-import { adminMiddleware } from '../../../shared/middlewares/admin.middleware';
+import { authMiddleware } from '@shared/middlewares/auth.middleware';
+import { adminMiddleware } from '@shared/middlewares/admin.middleware';
 
 const router = Router();
 const bookingController = new BookingController();

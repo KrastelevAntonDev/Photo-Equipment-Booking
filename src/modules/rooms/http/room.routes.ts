@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { RoomController } from './room.controller';
-import { validateDTO } from '../../../shared/middlewares/validation.middleware';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateRoomDTO } from './create-room.dto';
 
 const router = Router();
