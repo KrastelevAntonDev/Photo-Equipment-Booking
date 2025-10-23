@@ -1,4 +1,4 @@
-import { AdminRepository } from '../repositories/admin.repository';
+import { AdminMongoRepository } from '../modules/users/infrastructure/admin.mongo.repository';
 import { hashSync } from 'bcryptjs';
 
 const admins = [
@@ -11,7 +11,7 @@ const admins = [
 ];
 
 export async function seedAdmins() {
-  const repo = new AdminRepository();
+  const repo = new AdminMongoRepository();
   for (const admin of admins) {
     const exists = await repo.findByEmail(admin.email);
     if (!exists) {

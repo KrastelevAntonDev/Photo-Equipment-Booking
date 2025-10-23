@@ -1,24 +1,18 @@
 import express, { Request, Response, NextFunction } from 'express';
-import cors, { CorsOptions } from 'cors';
-import helmet from 'helmet';
+import cors from 'cors';
 import morgan from 'morgan';
 import compression from 'compression';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import multer from 'multer';
 
 import { connectDB } from './config/database';
-import userRoutes from './routes/userRoutes';
-import roomRoutes from './routes/roomRoutes';
-import equipmentRoutes from './routes/equipmentRoutes';
-import bookingRoutes from './routes/bookingRoutes';
-import authRoutes from './routes/authRoutes';
-import formRoutes from './routes/formRoutes'
-import subscribeRoutes from './routes/subscribeRoutes';
+import routes from './routes';
 
 
 import { seedAdmins } from './seed/admin.seed';
+import { env, isProd } from './config/env';
+import { errorHandler } from './shared/errors/error.middleware';
 
 
 // --------------------------------------------------
@@ -27,8 +21,7 @@ import { seedAdmins } from './seed/admin.seed';
 dotenv.config();
 
 // --------------------------------------------------
-// ESM __dirname / __filename polyfill
-// --------------------------------------------------
+// ESM __dirname / __filename polyfill (не используется в CJS)
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
@@ -82,11 +75,7 @@ const app = express();
 //   exposedHeaders: ['Content-Disposition'],
 //   maxAge: 600
 // };
-app.use(
-  cors({
-    origin: "*",
-  })
-);
+app.use(cors({ origin: '*' }));
 
 // Optional: handle preflight quickly
 // app.options('*', cors(corsOptions));
@@ -98,13 +87,13 @@ app.use(
 //   crossOriginResourcePolicy: { policy: 'cross-origin' }
 // }));
 app.use(compression());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan(isProd() ? 'combined' : 'dev'));
 
 // --------------------------------------------------
 // Body Parsers
 // --------------------------------------------------
-app.use(express.json({ limit: process.env.JSON_LIMIT || '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: process.env.JSON_LIMIT || '10mb' }));
+app.use(express.json({ limit: env.JSON_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: env.JSON_LIMIT }));
 
 // --------------------------------------------------
 // File Upload Handling (Multer)
@@ -130,7 +119,7 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   cb(null, true);
 };
 
-const upload = multer({
+const _upload = multer({
   storage,
   fileFilter,
   limits: {
@@ -140,8 +129,6 @@ const upload = multer({
 
 // Ensure uploads directory exists
 import fs from 'fs';
-import webhookRoutes from './routes/webhook.routes';
-import paymentRoutes from './routes/payment.routes';
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 // --------------------------------------------------
@@ -149,7 +136,7 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 // --------------------------------------------------
 const publicDir = path.join(__dirname, 'public');
 app.use('/public', express.static(publicDir, {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : '0',
+  maxAge: isProd() ? '7d' : '0',
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -195,15 +182,7 @@ app.get('/health', (_req, res) => {
 // --------------------------------------------------
 // API Routes
 // --------------------------------------------------
-app.use('', userRoutes);
-app.use('', roomRoutes);
-app.use('', equipmentRoutes);
-app.use('', bookingRoutes);
-app.use('', authRoutes);
-app.use('', formRoutes);
-app.use('', subscribeRoutes);
-app.use('', paymentRoutes);
-app.use('', webhookRoutes);
+app.use('', routes);
 
 
 
@@ -220,6 +199,7 @@ app.use((_req, res) => {
 // Centralized Error Handler
 // --------------------------------------------------
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use(errorHandler);
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('❌ Error middleware caught:', err);
 
@@ -236,9 +216,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // --------------------------------------------------
 // Server Startup & Graceful Shutdown
 // --------------------------------------------------
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = env.PORT;
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
+  console.log(`🚀 Server running on port ${PORT} (env: ${env.NODE_ENV})`);
 });
 
 const gracefulShutdown = (signal: string) => {
