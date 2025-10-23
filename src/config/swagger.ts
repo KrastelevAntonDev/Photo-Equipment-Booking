@@ -9,7 +9,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     description: 'API для бронирования студий и оборудования',
   },
   servers: [
-    { url: '/api', description: 'Current server (relative)' }
+    { url: '/', description: 'Current server (relative)' }
   ],
   components: {
     securitySchemes: {
@@ -116,7 +116,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
   ],
   paths: {
     // Auth
-    '/auth/login': {
+    '/login': {
       post: {
         tags: ['Auth'],
         summary: 'Вход пользователя',
@@ -134,7 +134,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         },
       },
     },
-    '/auth/register': {
+    '/register': {
       post: {
         tags: ['Auth'],
         summary: 'Регистрация пользователя',

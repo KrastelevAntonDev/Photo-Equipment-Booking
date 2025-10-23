@@ -186,7 +186,7 @@ app.get('/health', (_req, res) => {
 // API Routes
 // --------------------------------------------------
 // API routes under /api, webhook kept at root for provider callbacks
-app.use('/api', routes);
+app.use('/', routes);
 app.use('', webhookRoutes);
 
 // --------------------------------------------------
