@@ -79,4 +79,15 @@ export class BookingService {
       status: b.status as 'pending' | 'confirmed'
     }));
   }
+
+  async setOnSitePayment(
+    bookingId: string,
+    method: 'on_site_cash' | 'on_site_card'
+  ): Promise<Booking | null> {
+    // просто зафиксируем способ оплаты и поставим isPaid = false (оплата на месте позже)
+    return this.bookingRepository.updatePaymentInfo(bookingId, {
+      paymentMethod: method,
+      isPaid: false,
+    });
+  }
 }

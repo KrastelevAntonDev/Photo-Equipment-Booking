@@ -11,6 +11,10 @@ export interface IBookingRepository {
 	findByIdRoom(id: string): Promise<Booking | null>;
 	findOverlap(roomId: string, start: any, end: any): Promise<Booking[]>;
 	findBusySlots(roomId: string, rangeStart: any, rangeEnd: any): Promise<Booking[]>;
+  updatePaymentInfo(
+    id: string,
+    payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean }
+  ): Promise<Booking | null>;
 }
 
 export default IBookingRepository;

@@ -6,6 +6,14 @@ const admins = [
     email: 'test@test.com',
     passwordHash: hashSync('test', 10),
     phone: '+79999999999',
+    accessLevel: 'full' as const,
+    isDeleted: false,
+  },
+  {
+    email: 'partial@test.com',
+    passwordHash: hashSync('test', 10),
+    phone: '+79999999998',
+    accessLevel: 'partial' as const,
     isDeleted: false,
   },
 ];

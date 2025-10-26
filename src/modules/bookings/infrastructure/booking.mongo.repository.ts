@@ -74,6 +74,26 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		return bookings;
 	}
+
+	async updatePaymentInfo(
+		id: string,
+		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean }
+	): Promise<Booking | null> {
+		if (!ObjectId.isValid(id)) {
+			return null;
+		}
+		const _id = new ObjectId(id);
+		const update: Partial<Booking> = {
+			...('paymentMethod' in payload ? { paymentMethod: payload.paymentMethod } : {}),
+			...('isPaid' in payload ? { isPaid: payload.isPaid } : {}),
+			updatedAt: new Date(),
+		};
+		return this.getCollection().findOneAndUpdate(
+			{ _id },
+			{ $set: update },
+			{ returnDocument: 'after' }
+		);
+	}
 }
 
 export default BookingMongoRepository;

@@ -11,6 +11,8 @@ export interface Booking {
   end: Date;                                      // дата-время окончания брони
   status: "pending" | "confirmed" | "cancelled" | "completed"; // статусы брони
   totalPrice: number;                             // итоговая сумма
+  paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; // способ оплаты
+  isPaid?: boolean;                               // признак полной оплаты
   createdAt: Date;
   updatedAt: Date;
   isDeleted?: boolean;

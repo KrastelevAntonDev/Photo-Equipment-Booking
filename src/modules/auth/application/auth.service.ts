@@ -52,7 +52,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, admin.passwordHash);
     if (!valid) throw new Error('Invalid password');
     const token = jwt.sign(
-      { userId: admin._id, email: admin.email, phone: admin.phone },
+      { userId: admin._id, email: admin.email, phone: admin.phone, accessLevel: admin.accessLevel || 'full' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
