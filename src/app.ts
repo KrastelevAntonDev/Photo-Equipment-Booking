@@ -14,6 +14,7 @@ import openapiSpec from '@config/swagger';
 
 
 import { seedAdmins } from './seed/admin.seed';
+import { seedRooms } from './seed/room.seed';
 import { env, isProd } from '@config/env';
 import { errorHandler } from '@shared/errors/error.middleware';
 
@@ -42,7 +43,7 @@ const app = express();
 
     console.log('✅ Database connected');
     await seedAdmins();
-
+		await seedRooms();
   } catch (err) {
     console.error('❌ Initial DB connection failed:', err);
     process.exit(1);

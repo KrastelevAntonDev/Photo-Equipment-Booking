@@ -9,9 +9,9 @@ export interface Room {
   pricePerHour: number;                           // цена за час
   colorScheme: string[];                          // массив цветовых гамм (например: ['white', 'loft', ...])
   styles: string[];                               // массив стилей (например: ['modern', 'classic', ...])
-  description?: string;                           // описание
-  images?: string[];                              // ссылки на фото
-  createdAt: Date;
-  updatedAt: Date;
+  description: string;                           // описание
+  images: string[];                              // ссылки на фото
+  createdAt?: Date;
+  updatedAt?: Date;
   isDeleted?: boolean;
 }

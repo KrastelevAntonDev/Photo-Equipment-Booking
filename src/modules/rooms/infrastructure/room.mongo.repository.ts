@@ -29,6 +29,9 @@ export class RoomMongoRepository implements IRoomRepository {
 		const _id = new ObjectId(id);
 		return this.getCollection().findOne({ _id });
 	}
+	async findByName(name: string): Promise<Room | null> {
+		return this.getCollection().findOne({ name });
+	}
 }
 
 export default RoomMongoRepository;
