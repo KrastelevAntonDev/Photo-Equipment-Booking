@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { CreatePaymentRequest, Currency, ConfirmationType } from '@infrastructure/external/yookassa/yookassa.types';
 import { authMiddleware } from '@shared/middlewares/auth.middleware';
+import { adminMiddleware } from '@/shared/middlewares/admin.middleware';
 import { UserJwtPayload } from '@modules/users/domain/user.entity';
 import { PaymentService } from '../application/payment.service';
 import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
@@ -65,7 +66,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
 });
 
 // Get payment status
-router.get('/payments/:id', async (req: Request, res: Response) => {
+router.get('/payments/:id', adminMiddleware,  async (req: Request, res: Response) => {
   try {
     const payment = await yookassaService.getPayment(req.params.id);
     res.json(payment);
@@ -83,7 +84,7 @@ router.get('/payments', async (req: Request, res: Response) => {
 });
 
 // Capture payment
-router.post('/payments/:id/capture', async (req: Request, res: Response) => {
+router.post('/payments/:id/capture', adminMiddleware, async (req: Request, res: Response) => {
   try {
     const payment = await yookassaService.capturePayment(req.params.id, req.body.amount);
     res.json(payment);
@@ -93,7 +94,7 @@ router.post('/payments/:id/capture', async (req: Request, res: Response) => {
 });
 
 // Cancel payment
-router.post('/payments/:id/cancel', async (req: Request, res: Response) => {
+router.post('/payments/:id/cancel', adminMiddleware, async (req: Request, res: Response) => {
   try {
     const payment = await yookassaService.cancelPayment(req.params.id);
     res.json(payment);
@@ -103,7 +104,7 @@ router.post('/payments/:id/cancel', async (req: Request, res: Response) => {
 });
 
 // Create refund
-router.post('/refunds', async (req: Request, res: Response) => {
+router.post('/refunds', adminMiddleware, async (req: Request, res: Response) => {
   try {
     const payload = {
       payment_id: req.body.payment_id,
@@ -121,7 +122,7 @@ router.post('/refunds', async (req: Request, res: Response) => {
 });
 
 // Get refund
-router.get('/refunds/:id', async (req: Request, res: Response) => {
+router.get('/refunds/:id', adminMiddleware, async (req: Request, res: Response) => {
   try {
     const refund = await yookassaService.getRefund(req.params.id);
     res.json(refund);
