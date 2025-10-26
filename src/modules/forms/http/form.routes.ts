@@ -7,12 +7,12 @@ import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 const router = Router();
 const formController = new FormController();
 
-router.get('/forms', authMiddleware, (req, res) => formController.getAllForms(req, res));
+router.get('/forms', adminMiddleware, (req, res) => formController.getAllForms(req, res));
 router.post('/form', validateDTO(CreateFormDTO), (req, res) => formController.createForm(req, res));
-router.get('/form/:id', authMiddleware, (req, res) => {
+router.get('/form/:id', adminMiddleware, (req, res) => {
 	formController.getFormById(req, res);
 });
-router.get('/form/type/:type', authMiddleware, (req, res) =>{
+router.get('/form/type/:type', adminMiddleware, (req, res) =>{
 	 formController.findByFormType(req, res);
 });
 
