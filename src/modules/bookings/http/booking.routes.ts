@@ -8,7 +8,7 @@ import { adminMiddleware } from '@shared/middlewares/admin.middleware';
 const router = Router();
 const bookingController = new BookingController();
 
-router.get('/bookings', authMiddleware, (req, res) => bookingController.getAllBookings(req, res));
+router.get('/bookings', adminMiddleware, (req, res) => bookingController.getAllBookings(req, res));
 router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
 	bookingController.createBooking(req, res)
 });

@@ -9,7 +9,7 @@ import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 const router = Router();
 const equipmentController = new EquipmentController();
 
-router.get('/equipment', authMiddleware, (req, res) => equipmentController.getAllEquipment(req, res));
+router.get('/equipment', (req, res) => equipmentController.getAllEquipment(req, res));
 router.post('/equipment', adminMiddleware, validateDTO(CreateEquipmentDTO), (req, res) => equipmentController.createEquipment(req, res));
 // router.get('/equipment/:id', (req, res) => equipmentController.getEquipmentById(req, res));
 
