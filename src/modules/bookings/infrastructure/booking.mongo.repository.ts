@@ -94,6 +94,32 @@ export class BookingMongoRepository implements IBookingRepository {
 			{ returnDocument: 'after' }
 		);
 	}
+
+		async updatePartial(
+			id: string,
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid'>>
+		): Promise<Booking | null> {
+			if (!ObjectId.isValid(id)) {
+				return null;
+			}
+			const _id = new ObjectId(id);
+			// Приведение типов для ObjectId и Date
+			const set: any = { updatedAt: new Date() };
+			if (update.roomId) set.roomId = new ObjectId(update.roomId);
+			if (update.equipmentIds) set.equipmentIds = update.equipmentIds.map((e: any) => new ObjectId(e));
+			if (update.start) set.start = new Date(update.start);
+			if (update.end) set.end = new Date(update.end);
+			if (typeof update.totalPrice !== 'undefined') set.totalPrice = update.totalPrice;
+			if (update.status) set.status = update.status;
+			if (typeof update.isPaid !== 'undefined') set.isPaid = update.isPaid;
+			if (update.paymentMethod) set.paymentMethod = update.paymentMethod;
+
+			return this.getCollection().findOneAndUpdate(
+				{ _id },
+				{ $set: set },
+				{ returnDocument: 'after' }
+			);
+		}
 }
 
 export default BookingMongoRepository;

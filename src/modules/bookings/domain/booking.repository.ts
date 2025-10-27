@@ -15,6 +15,10 @@ export interface IBookingRepository {
     id: string,
     payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean }
   ): Promise<Booking | null>;
+  updatePartial(
+    id: string,
+    update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid'>>
+  ): Promise<Booking | null>;
 }
 
 export default IBookingRepository;

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { BookingService } from '../application/booking.service';
-import { Booking, BookingWithUser } from '../domain/booking.entity';
+import { BookingWithUser } from '../domain/booking.entity';
 import { RoomService } from '../../rooms/application/room.service';
 import { UserJwtPayload } from '../../users/domain/user.entity';
 
@@ -75,4 +75,17 @@ export class BookingController {
     res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
   }
 }
+  async updateBooking(req: Request, res: Response) {
+    try {
+      const updated = await this.bookingService.updateBooking(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+      res.json(updated);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const status = /already booked|End time/.test(errorMessage) ? 400 : 500;
+      res.status(status).json({ message: errorMessage });
+    }
+  }
 }

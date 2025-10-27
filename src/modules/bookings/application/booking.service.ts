@@ -90,4 +90,31 @@ export class BookingService {
       isPaid: false,
     });
   }
+
+  async updateBooking(
+    id: string,
+    update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid'>>
+  ): Promise<Booking | null> {
+    const existing = await this.bookingRepository.findById(id);
+    if (!existing) return null;
+
+    // Валидация временных границ
+    const newStart = update.start ? new Date(update.start) : existing.start;
+    const newEnd = update.end ? new Date(update.end) : existing.end;
+    if (newStart && newEnd && newEnd <= newStart) {
+      throw new Error('End time must be after start time');
+    }
+
+    // Целевая комната для проверки пересечений
+    const targetRoomId = (update.roomId || existing.roomId).toString();
+
+    // Проверка пересечения времени брони для зала (исключая текущую бронь)
+    const overlap = await this.bookingRepository.findOverlap(targetRoomId, newStart, newEnd);
+    const conflicts = overlap.filter(b => b._id?.toString() !== existing._id?.toString());
+    if (conflicts.length > 0) {
+      throw new Error('Room already booked for this time');
+    }
+
+    return this.bookingRepository.updatePartial(id, update);
+  }
 }

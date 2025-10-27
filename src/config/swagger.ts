@@ -48,6 +48,19 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           end: { type: 'string', format: 'date-time' },
         },
       },
+      UpdateBookingDTO: {
+        type: 'object',
+        properties: {
+          roomId: { type: 'string' },
+          equipmentIds: { type: 'array', items: { type: 'string' } },
+          start: { type: 'string', format: 'date-time' },
+          end: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
+          totalPrice: { type: 'number' },
+          paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
+          isPaid: { type: 'boolean' },
+        },
+      },
       CreateFormDTO: {
         type: 'object',
         required: ['name', 'phone', 'servicesType', 'textarea', 'checkbox', 'formType'],
@@ -201,6 +214,28 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBookingDTO' } } },
         },
         responses: { '201': { description: 'Created' }, '400': { description: 'Ошибка валидации/пересечение' } },
+      },
+    },
+    '/bookings/{id}': {
+      put: {
+        tags: ['Bookings'],
+        summary: 'Обновить бронь (админ)',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/UpdateBookingDTO' } },
+          },
+        },
+        responses: {
+          '200': { description: 'Updated' },
+          '400': { description: 'Ошибка валидации или пересечение времени' },
+          '403': { description: 'Недостаточно прав' },
+          '404': { description: 'Бронь не найдена' },
+        },
       },
     },
     // Forms
