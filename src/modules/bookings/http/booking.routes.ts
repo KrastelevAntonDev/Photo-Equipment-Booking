@@ -20,7 +20,7 @@ router.get('/bookings/booking/:id', adminMiddleware, (req, res) => {
 	bookingController.getBookingById(req, res);
 });
 
-router.get('/booking/busy-slots', authMiddleware, (req, res) => {
+router.get('/booking/busy-slots', (req, res) => {
 	bookingController.getBusySlots(req, res);
 });
 
