@@ -138,15 +138,15 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 // --------------------------------------------------
 // Static File Serving
 // --------------------------------------------------
-const publicDir = path.join(__dirname, 'public');
-app.use('/public', express.static(publicDir, {
-  maxAge: isProd() ? '7d' : '0',
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.json')) {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    }
-  }
-}));
+// const publicDir = path.join(__dirname, 'public');
+// app.use('/public', express.static(publicDir, {
+//   maxAge: isProd() ? '7d' : '0',
+//   setHeaders: (res, filePath) => {
+//     if (filePath.endsWith('.json')) {
+//       res.setHeader('Content-Type', 'application/json; charset=utf-8');
+//     }
+//   }
+// }));
 
 // --------------------------------------------------
 // Health Check
