@@ -30,6 +30,7 @@ export class BookingService {
   }
   async createBooking(booking: BookingWithUser): Promise<Booking> {
     // Проверка пользователя
+		
     const userId = booking.user.userId;
     const user = await this.userRepository.findById(userId.toString());
     if (!user) throw new Error('User not found');
