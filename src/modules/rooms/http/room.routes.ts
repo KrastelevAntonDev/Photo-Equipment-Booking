@@ -10,7 +10,7 @@ const roomController = new RoomController();
 
 router.get('/rooms', (req, res) => roomController.getAllRooms(req, res));
 router.post('/rooms', adminMiddleware, validateDTO(CreateRoomDTO), (req, res) => roomController.createRoom(req, res));
-router.get('/rooms/:id', authMiddleware, (req, res) => {
+router.get('/rooms/:id', (req, res) => {
 	roomController.getRoomById(req, res);
 });
 

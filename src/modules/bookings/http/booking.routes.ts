@@ -10,7 +10,7 @@ const router = Router();
 const bookingController = new BookingController();
 
 router.get('/bookings', authMiddleware, (req, res) => bookingController.getAllBookings(req, res));
-router.post('/bookings', adminMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
+router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
 	bookingController.createBooking(req, res)
 });
 router.get('/bookings/room/:id', adminMiddleware, (req, res) => {
