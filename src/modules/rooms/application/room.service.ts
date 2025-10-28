@@ -28,7 +28,12 @@ export class RoomService {
   }
 
   async getRoomById(id: string): Promise<Room | null> {
-    return this.roomRepository.findById(id);
+    const room = await this.roomRepository.findById(id)
+		if (!room) {
+			return null;
+		}
+		room.images = await this.getRoomImageUrls(room.name);
+		return room;
   }
 
   private async getRoomImageUrls(roomName: string): Promise<string[]> {
