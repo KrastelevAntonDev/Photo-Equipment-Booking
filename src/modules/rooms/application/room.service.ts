@@ -28,43 +28,45 @@ export class RoomService {
   }
 
   async getRoomById(id: string): Promise<Room | null> {
-    const room = await this.roomRepository.findById(id)
-		if (!room) {
-			return null;
-		}
-		room.images = await this.getRoomImageUrls(room.name);
-		return room;
+    const room = await this.roomRepository.findById(id);
+    if (!room) {
+      return null;
+    }
+    const images = await this.getRoomImageUrls(room.name);
+    return { ...room, images } as Room;
   }
 
   private async getRoomImageUrls(roomName: string): Promise<string[]> {
     // Базовая директория загрузок для комнат (относительно dist в проде)
     const uploadsBase = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms');
-    const safeName = roomName; // допускаем кириллицу и пробелы, экранируем позже только в URL
-    const roomDir = path.join(uploadsBase, safeName);
 
-    if (!fs.existsSync(roomDir)) {
-      return [];
-    }
+    const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '_');
+    const candidates = Array.from(new Set([roomName, normalize(roomName)]));
 
-    const files: string[] = [];
+    const filesSet = new Set<string>();
 
-    const walk = async (dir: string, base: string) => {
+    const walk = async (dir: string, base: string, baseSegment: string) => {
       const entries = await fs.promises.readdir(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          await walk(fullPath, base);
+          await walk(fullPath, base, baseSegment);
         } else {
           const rel = path.relative(base, fullPath);
-          // Собираем корректный URL с кодированием сегментов
           const segments = rel.split(path.sep).map(s => encodeURIComponent(s));
-          const url = ['/public', 'uploads', 'rooms', ...safeName.split(path.sep).map(s => encodeURIComponent(s)), ...segments].join('/');
-          files.push(url);
+          const url = ['/public', 'uploads', 'rooms', encodeURIComponent(baseSegment), ...segments].join('/');
+          filesSet.add(url);
         }
       }
     };
 
-    await walk(roomDir, roomDir);
-    return files.sort();
+    for (const candidate of candidates) {
+      const roomDir = path.join(uploadsBase, candidate);
+      if (fs.existsSync(roomDir)) {
+        await walk(roomDir, roomDir, candidate);
+      }
+    }
+
+    return Array.from(filesSet).sort();
   }
 }
