@@ -39,9 +39,8 @@ export class RoomService {
   private async getRoomImageUrls(roomName: string): Promise<string[]> {
     // Базовая директория загрузок для комнат (относительно dist в проде)
     const uploadsBase = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms');
-
     const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '_');
-    const candidates = Array.from(new Set([roomName, normalize(roomName)]));
+    const normalizedTarget = normalize(roomName);
 
     const filesSet = new Set<string>();
 
@@ -60,10 +59,27 @@ export class RoomService {
       }
     };
 
-    for (const candidate of candidates) {
-      const roomDir = path.join(uploadsBase, candidate);
-      if (fs.existsSync(roomDir)) {
-        await walk(roomDir, roomDir, candidate);
+    // 1) Попробуем найти реальные директории, у которых normalize(dirName) === normalizedTarget
+    if (fs.existsSync(uploadsBase)) {
+      const baseEntries = await fs.promises.readdir(uploadsBase, { withFileTypes: true });
+      const matchedDirs = baseEntries
+        .filter(e => e.isDirectory() && normalize(e.name) === normalizedTarget)
+        .map(e => e.name);
+
+      for (const realDirName of matchedDirs) {
+        const roomDir = path.join(uploadsBase, realDirName);
+        await walk(roomDir, roomDir, realDirName);
+      }
+
+      // 2) Фоллбек: если ничего не нашли, пробуем напрямую оригинальное и нормализованное имя
+      if (matchedDirs.length === 0) {
+        const fallbacks = Array.from(new Set([roomName, normalizedTarget]));
+        for (const candidate of fallbacks) {
+          const roomDir = path.join(uploadsBase, candidate);
+          if (fs.existsSync(roomDir)) {
+            await walk(roomDir, roomDir, candidate);
+          }
+        }
       }
     }
 
