@@ -63,7 +63,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       },
       AdminCreateBookingDTO: {
         type: 'object',
-        required: ['userId', 'roomId', 'start', 'end'],
+        required: ['userId', 'roomId', 'start', 'end', 'paymentMethod'],
         properties: {
           userId: { type: 'string' },
           roomId: { type: 'string' },
@@ -71,6 +71,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           start: { type: 'string', format: 'date-time' },
           end: { type: 'string', format: 'date-time' },
           totalPrice: { type: 'number' },
+          paymentMethod: { type: 'string', enum: ['on_site_cash', 'on_site_card'] },
         },
       },
       CreateFormDTO: {

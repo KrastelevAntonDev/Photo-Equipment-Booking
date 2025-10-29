@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsDateString, IsArray, IsOptional, IsMongoId } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsArray, IsOptional, IsMongoId, IsIn } from 'class-validator';
 
 export class AdminCreateBookingDTO {
   @IsMongoId()
@@ -22,4 +22,8 @@ export class AdminCreateBookingDTO {
 
   @IsOptional()
   totalPrice?: number;
+
+  @IsString()
+  @IsIn(['on_site_cash', 'on_site_card'])
+  paymentMethod!: 'on_site_cash' | 'on_site_card';
 }
