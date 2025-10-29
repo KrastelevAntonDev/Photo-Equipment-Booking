@@ -3,7 +3,6 @@ import { SubscribeController } from './subscription.controller';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateSubscribeDTO } from './create-subscribe.dto';
 import { adminMiddleware } from '@/shared/middlewares/admin.middleware';
-import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 const router = Router();
 const subscribeController = new SubscribeController();
 

@@ -4,7 +4,6 @@ import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateEquipmentDTO } from './create-equipment.dto';
 
 import { adminMiddleware } from '@/shared/middlewares/admin.middleware';
-import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 
 const router = Router();
 const equipmentController = new EquipmentController();

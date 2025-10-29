@@ -5,6 +5,7 @@ import { CreateBookingDTO } from './create-booking.dto';
 import { authMiddleware } from '@shared/middlewares/auth.middleware';
 import { adminMiddleware, requireAdminLevel } from '@shared/middlewares/admin.middleware';
 import { UpdateBookingDTO } from './update-booking.dto';
+import { AdminCreateBookingDTO } from './admin-create-booking.dto';
 
 const router = Router();
 const bookingController = new BookingController();
@@ -27,5 +28,10 @@ router.get('/booking/busy-slots', (req, res) => {
 // Update booking (admin panel)
 router.put('/bookings/:id', requireAdminLevel('partial'), validateDTO(UpdateBookingDTO), (req, res) => {
   bookingController.updateBooking(req, res);
+});
+
+// Create booking by admin for a user
+router.post('/admin/create-booking', requireAdminLevel('partial'), validateDTO(AdminCreateBookingDTO), (req, res) => {
+	bookingController.adminCreateBooking(req, res);
 });
 export default router;	

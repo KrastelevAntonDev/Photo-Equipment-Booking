@@ -65,6 +65,66 @@ export class BookingService {
     return newBooking;
   }
 
+  async createBookingForUser(
+    userId: string,
+    payload: {
+      roomId: string;
+      equipmentIds?: string[];
+      start: string | Date;
+      end: string | Date;
+      totalPrice?: number;
+    }
+  ): Promise<Booking> {
+    // Проверка пользователя
+    const user = await this.userRepository.findById(userId.toString());
+    if (!user) throw new Error('User not found');
+
+    // Проверка зала
+    const room = await this.roomRepository.findById(payload.roomId.toString());
+    if (!room) throw new Error('Room not found');
+
+    // Проверка оборудования
+    if (payload.equipmentIds && payload.equipmentIds.length) {
+      for (const eqId of payload.equipmentIds) {
+        const eq = await this.equipmentRepository.findById(eqId.toString());
+        if (!eq) throw new Error(`Equipment not found: ${eqId}`);
+      }
+    }
+
+    const startDate = new Date(payload.start);
+    const endDate = new Date(payload.end);
+    if (!(startDate instanceof Date) || isNaN(startDate.getTime())) {
+      throw new Error('Invalid start date');
+    }
+    if (!(endDate instanceof Date) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid end date');
+    }
+    if (endDate <= startDate) {
+      throw new Error('End time must be after start time');
+    }
+
+    // Проверка пересечения времени бронирования для зала
+    const overlap = await this.bookingRepository.findOverlap(payload.roomId.toString(), startDate, endDate);
+    if (overlap.length > 0) throw new Error('Room already booked for this time');
+
+    const equipmentIds = payload.equipmentIds ? payload.equipmentIds.map(id => new ObjectId(id)) : [];
+    const newBody: Booking = {
+      userId: new ObjectId(userId),
+      roomId: new ObjectId(payload.roomId),
+      equipmentIds,
+      start: startDate,
+      end: endDate,
+      status: 'pending',
+      totalPrice: payload.totalPrice ?? 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const newBooking = await this.bookingRepository.createBooking(newBody);
+    await this.userRepository.addBookingToUser(userId.toString(), newBooking._id!.toString());
+    return newBooking;
+  }
+
   async getBookingById(id: string): Promise<Booking | null> {
     return this.bookingRepository.findById(id);
   }

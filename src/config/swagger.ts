@@ -61,6 +61,18 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           isPaid: { type: 'boolean' },
         },
       },
+      AdminCreateBookingDTO: {
+        type: 'object',
+        required: ['userId', 'roomId', 'start', 'end'],
+        properties: {
+          userId: { type: 'string' },
+          roomId: { type: 'string' },
+          equipmentIds: { type: 'array', items: { type: 'string' } },
+          start: { type: 'string', format: 'date-time' },
+          end: { type: 'string', format: 'date-time' },
+          totalPrice: { type: 'number' },
+        },
+      },
       CreateFormDTO: {
         type: 'object',
         required: ['name', 'phone', 'servicesType', 'textarea', 'checkbox', 'formType'],
@@ -235,6 +247,24 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           '400': { description: 'Ошибка валидации или пересечение времени' },
           '403': { description: 'Недостаточно прав' },
           '404': { description: 'Бронь не найдена' },
+        },
+      },
+    },
+    '/admin/create-booking': {
+      post: {
+        tags: ['Bookings'],
+        summary: 'Создать бронь от имени пользователя (админ)',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/AdminCreateBookingDTO' } },
+          },
+        },
+        responses: {
+          '201': { description: 'Created' },
+          '400': { description: 'Ошибка валидации/пересечение/не найдены сущности' },
+          '403': { description: 'Недостаточно прав' },
         },
       },
     },

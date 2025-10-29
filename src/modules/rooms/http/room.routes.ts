@@ -3,7 +3,6 @@ import { RoomController } from './room.controller';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateRoomDTO } from './create-room.dto';
 import { adminMiddleware } from '@/shared/middlewares/admin.middleware';
-import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 
 const router = Router();
 const roomController = new RoomController();

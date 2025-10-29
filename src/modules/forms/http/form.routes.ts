@@ -3,7 +3,6 @@ import { FormController } from './form.controller';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateFormDTO } from './create-form.dto';
 import { adminMiddleware } from '@/shared/middlewares/admin.middleware';
-import { authMiddleware } from '@/shared/middlewares/auth.middleware';
 const router = Router();
 const formController = new FormController();
 

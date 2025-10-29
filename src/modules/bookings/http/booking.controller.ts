@@ -88,4 +88,22 @@ export class BookingController {
       res.status(status).json({ message: errorMessage });
     }
   }
+
+  async adminCreateBooking(req: Request, res: Response) {
+    try {
+      const { userId, roomId, equipmentIds, start, end, totalPrice } = req.body as any;
+      const newBooking = await this.bookingService.createBookingForUser(userId, {
+        roomId,
+        equipmentIds,
+        start,
+        end,
+        totalPrice
+      });
+      res.status(201).json(newBooking);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const status = /already booked|User not found|Room not found|Equipment not found|End time/.test(errorMessage) ? 400 : 500;
+      res.status(status).json({ message: errorMessage });
+    }
+  }
 }
