@@ -93,6 +93,14 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           email: { type: 'string', format: 'email' },
         },
       },
+      AdminCreateUserDTO: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          phone: { type: 'string' },
+        },
+      },
       PaymentCreateRequest: {
         type: 'object',
         required: ['amount', 'bookingId'],
@@ -202,6 +210,22 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateUserDTO' } } },
         },
         responses: { '201': { description: 'Created' } },
+      },
+    },
+    '/admin/create-user': {
+      post: {
+        tags: ['Users'],
+        summary: 'Создать пользователя (админ)',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/AdminCreateUserDTO' } } },
+        },
+        responses: {
+          '201': { description: 'Created' },
+          '400': { description: 'Ошибка валидации' },
+          '409': { description: 'Пользователь с таким email уже существует' },
+        },
       },
     },
     // Rooms
