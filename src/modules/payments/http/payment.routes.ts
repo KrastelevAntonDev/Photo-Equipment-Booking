@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { CreatePaymentRequest, Currency, ConfirmationType } from '@infrastructure/external/yookassa/yookassa.types';
+import { CreatePaymentRequest, Currency, ConfirmationType, PaymentMethodType } from '@infrastructure/external/yookassa/yookassa.types';
 import { authMiddleware } from '@shared/middlewares/auth.middleware';
 import { requireAdminLevel } from '@/shared/middlewares/admin.middleware';
 import { UserJwtPayload } from '@modules/users/domain/user.entity';
@@ -48,6 +48,10 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
         value: req.body.amount,
         currency: Currency.RUB,
       },
+      payment_method_data: {
+        type: PaymentMethodType.Sbp
+      },
+
       confirmation: {
         type: ConfirmationType.Redirect,
         return_url: req.body.return_url || 'http://picassostudio.ru/',
