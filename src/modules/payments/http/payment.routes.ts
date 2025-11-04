@@ -23,6 +23,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
   }
   try {
     const method = (req.body.method as string | undefined) || 'online';
+    const paymentOption = (req.body.paymentOption as string | undefined) || 'full'; // 'full' | 'half'
 
     // Обработка оплаты на месте: не создаём плтёж в YooKassa
     if (method === 'on_site_cash' || method === 'on_site_card') {
@@ -45,7 +46,16 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       res.status(404).json({ message: 'Booking not found' });
       return;
     }
-    const amountValue = (booking.totalPrice ?? 0).toFixed(2);
+    const total = booking.totalPrice ?? 0;
+    const alreadyPaid = booking.paidAmount ?? 0;
+    const outstanding = Math.max(0, total - alreadyPaid);
+    if (outstanding <= 0) {
+      res.status(400).json({ message: 'Booking already fully paid' });
+      return;
+    }
+    const desired = paymentOption === 'half' ? total * 0.5 : total;
+    const amountToPay = Math.min(outstanding, desired);
+    const amountValue = amountToPay.toFixed(2);
 
     const payload: CreatePaymentRequest = {
       amount: {
@@ -64,7 +74,8 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       description: req.body.description || 'Payment for booking',
       metadata: {
         userId: req.user.userId,
-        bookingId: req.body.bookingId
+        bookingId: req.body.bookingId,
+        paymentOption,
       },
       receipt: {
         items: [{

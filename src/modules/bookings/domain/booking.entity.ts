@@ -13,6 +13,8 @@ export interface Booking {
   totalPrice: number;                             // итоговая сумма
   paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; // способ оплаты
   isPaid?: boolean;                               // признак полной оплаты
+  paidAmount?: number;                            // сколько оплачено суммарно
+  paymentStatus?: 'unpaid' | 'partial' | 'paid';  // состояние оплаты
   createdAt: Date;
   updatedAt: Date;
   isDeleted?: boolean;

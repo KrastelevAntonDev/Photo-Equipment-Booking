@@ -89,6 +89,8 @@ export class BookingService {
 			totalPrice: computedTotal,
 			paymentMethod: "online", // пользователь создаёт — оплата только онлайн
 			isPaid: false,
+			paidAmount: 0,
+			paymentStatus: 'unpaid',
 		} as Booking;
 		const newBooking = await this.bookingRepository.createBooking(newBody);
 
@@ -176,7 +178,9 @@ export class BookingService {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			paymentMethod: payload.paymentMethod,
-			isPaid: false,
+				isPaid: false,
+				paidAmount: 0,
+				paymentStatus: 'unpaid',
 		};
 
 		const newBooking = await this.bookingRepository.createBooking(newBody);
@@ -266,6 +270,28 @@ export class BookingService {
 
 		return this.bookingRepository.updatePartial(id, update);
 	}
+
+		// Регистрируем входящий платёж: увеличиваем paidAmount, пересчитываем статусы
+		async registerPayment(bookingId: string, amount: number): Promise<Booking | null> {
+			const booking = await this.bookingRepository.findById(bookingId);
+			if (!booking) return null;
+			const currentPaid = booking.paidAmount ?? 0;
+			const total = booking.totalPrice ?? 0;
+			const newPaid = Math.max(0, currentPaid + amount);
+			const fullyPaid = newPaid + 1e-6 >= total; // небольшая погрешность для округления
+			const paymentStatus = fullyPaid ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
+			const updated = await this.bookingRepository.updatePartial(bookingId, {
+				paidAmount: Math.round(newPaid * 100) / 100,
+				paymentStatus,
+				isPaid: fullyPaid,
+			});
+			if (updated && fullyPaid && updated.status === 'pending') {
+				await this.updateBookingStatus(bookingId, 'confirmed');
+				// Перечитаем для консистентности
+				return this.bookingRepository.findById(bookingId);
+			}
+			return updated;
+		}
 
 	// Расчёт стоимости: (цена зала + сумма цен оборудования) * длительность (в часах)
 	private async computeTotalPrice(

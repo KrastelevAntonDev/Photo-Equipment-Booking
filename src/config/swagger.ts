@@ -111,6 +111,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           description: { type: 'string' },
           return_url: { type: 'string' },
           method: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
+          paymentOption: { type: 'string', enum: ['full', 'half'], description: 'Размер оплаты при онлайн-платеже: 100% или 50%' },
         },
       },
       // Equipment

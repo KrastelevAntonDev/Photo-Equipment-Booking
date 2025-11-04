@@ -77,7 +77,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 	async updatePaymentInfo(
 		id: string,
-		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean }
+		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid' }
 	): Promise<Booking | null> {
 		if (!ObjectId.isValid(id)) {
 			return null;
@@ -86,6 +86,8 @@ export class BookingMongoRepository implements IBookingRepository {
 		const update: Partial<Booking> = {
 			...('paymentMethod' in payload ? { paymentMethod: payload.paymentMethod } : {}),
 			...('isPaid' in payload ? { isPaid: payload.isPaid } : {}),
+			...('paidAmount' in payload ? { paidAmount: payload.paidAmount } : {}),
+			...('paymentStatus' in payload ? { paymentStatus: payload.paymentStatus } : {}),
 			updatedAt: new Date(),
 		};
 		return this.getCollection().findOneAndUpdate(
@@ -97,7 +99,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		async updatePartial(
 			id: string,
-			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid'>>
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus'>>
 		): Promise<Booking | null> {
 			if (!ObjectId.isValid(id)) {
 				return null;
@@ -112,6 +114,8 @@ export class BookingMongoRepository implements IBookingRepository {
 			if (typeof update.totalPrice !== 'undefined') set.totalPrice = update.totalPrice;
 			if (update.status) set.status = update.status;
 			if (typeof update.isPaid !== 'undefined') set.isPaid = update.isPaid;
+			if (typeof update.paidAmount !== 'undefined') set.paidAmount = update.paidAmount;
+			if (typeof update.paymentStatus !== 'undefined') set.paymentStatus = update.paymentStatus;
 			if (update.paymentMethod) set.paymentMethod = update.paymentMethod;
 
 			return this.getCollection().findOneAndUpdate(

@@ -63,6 +63,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           console.warn('Missing metadata in payment success webhook');
           break;
         }
+        // Сохраняем платёж
         paymentService.createPayment({
           bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
           userId: new ObjectId(paymentSuccess.metadata.userId),
@@ -72,9 +73,11 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           currency: 'RUB',
           paid: paymentSuccess.paid,
           refundable: paymentSuccess.refundable,
+          metadata: paymentSuccess.metadata,
         })
-        if(paymentSuccess.paid === true){
-          bookingService.updateBookingStatus(paymentSuccess.metadata.bookingId, 'confirmed');
+        // Регистрируем оплату в брони (накопительным итогом)
+        if (paymentSuccess.paid === true) {
+          await bookingService.registerPayment(paymentSuccess.metadata.bookingId, Number(paymentSuccess.amount.value));
         }
         console.log(`Payment succeeded: ${paymentSuccess.id}`);
         break;
