@@ -17,10 +17,6 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
     res.status(401).json({ message: 'Unauthorized' });
     return
   }
-  if(!req.body.amount) {
-     res.status(400).json({ message: 'Amount is required' });
-     return
-  }
   if(!req.body.bookingId) {
       res.status(400).json({ message: 'Booking ID is required' });
       return
@@ -43,9 +39,17 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       return;
     }
 
+    // Рассчитываем сумму из брони
+    const booking = await bookingService.getBookingById(req.body.bookingId);
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+    const amountValue = (booking.totalPrice ?? 0).toFixed(2);
+
     const payload: CreatePaymentRequest = {
       amount: {
-        value: req.body.amount,
+        value: amountValue,
         currency: Currency.RUB,
       },
       payment_method_data: {
@@ -57,16 +61,16 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
         return_url: req.body.return_url || 'http://picassostudio.ru/',
       },
       capture: req.body.capture ?? true,
-      description: req.body.description || 'Payment for order',
+      description: req.body.description || 'Payment for booking',
       metadata: {
         userId: req.user.userId,
         bookingId: req.body.bookingId
       },
       receipt: {
         items: [{
-          description: req.body.description || 'Payment for order',
+          description: req.body.description || 'Payment for booking',
           amount: {
-            value: req.body.amount,
+            value: amountValue,
             currency: Currency.RUB,
           },
           quantity: 1,

@@ -104,13 +104,13 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       },
       PaymentCreateRequest: {
         type: 'object',
-        required: ['amount', 'bookingId'],
+        required: ['bookingId'],
         properties: {
-          amount: { oneOf: [{ type: 'string' }, { type: 'number' }] },
           bookingId: { type: 'string' },
           capture: { type: 'boolean' },
           description: { type: 'string' },
           return_url: { type: 'string' },
+          method: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
         },
       },
       // Equipment
