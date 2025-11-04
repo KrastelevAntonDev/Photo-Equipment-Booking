@@ -29,6 +29,10 @@ export class EquipmentMongoRepository implements IEquipmentRepository {
 		const _id = new ObjectId(id);
 		return this.getCollection().findOne({ _id });
 	}
+
+  async findByName(name: string): Promise<Equipment | null> {
+    return this.getCollection().findOne({ name });
+  }
 }
 
 export default EquipmentMongoRepository;
