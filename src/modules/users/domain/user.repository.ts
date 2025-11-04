@@ -7,6 +7,7 @@ export interface IUserRepository {
 	findByEmail(email: string): Promise<User | null>;
 	findById(id: string): Promise<User | null>;
 	addBookingToUser(userId: string, bookingId: string): Promise<void>;
+  addFavoriteRoom(userId: string, roomId: string): Promise<void>;
 }
 
 export default IUserRepository;

@@ -18,6 +18,10 @@ export class UserService {
     return this.userRepository.createUser(user);
   }
 
+  async addFavoriteRoom(userId: string, roomId: string): Promise<void> {
+    return this.userRepository.addFavoriteRoom(userId, roomId);
+  }
+
   // Создание пользователя через админку с минимальными полями
   async createUserByAdmin(payload: { email: string; phone?: string }): Promise<User> {
     const existing = await this.userRepository.findByEmail(payload.email);

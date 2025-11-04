@@ -26,4 +26,9 @@ router.post('/admin/create-user', requireAdminLevel('partial'), validateDTO(Admi
   userController.adminCreateUser(req, res);
 });
 
+// Add room to favorites
+router.post('/user/favorites/rooms/:roomId', authMiddleware, (req, res) => {
+	userController.addFavoriteRoom(req as any, res);
+});
+
 export default router;

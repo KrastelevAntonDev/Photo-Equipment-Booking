@@ -214,6 +214,21 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         responses: { '201': { description: 'Created' } },
       },
     },
+    '/user/favorites/rooms/{roomId}': {
+      post: {
+        tags: ['Users'],
+        summary: 'Добавить комнату в избранное пользователя',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'roomId', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '204': { description: 'Добавлено или уже было в избранном' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Комната не найдена' }
+        },
+      },
+    },
     '/admin/create-user': {
       post: {
         tags: ['Users'],

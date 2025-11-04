@@ -47,6 +47,12 @@ export class UserMongoRepository implements IUserRepository {
 		const filter = { _id: new ObjectId(userId) };
 		await this.getCollection().updateOne(filter, { $push: { bookings: new ObjectId(bookingId) } });
 	}
+
+  async addFavoriteRoom(userId: string, roomId: string): Promise<void> {
+    if (!ObjectId.isValid(userId) || !ObjectId.isValid(roomId)) return;
+    const filter = { _id: new ObjectId(userId) };
+    await this.getCollection().updateOne(filter, { $addToSet: { favoriteRoomIds: new ObjectId(roomId) } });
+  }
 }
 
 export default UserMongoRepository;
