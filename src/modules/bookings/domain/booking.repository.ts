@@ -9,6 +9,7 @@ export interface IBookingRepository {
 	createBooking(booking: Booking): Promise<Booking>;
 	findById(id: string): Promise<Booking | null>;
 	findByIdRoom(id: string): Promise<Booking | null>;
+	findByUserId(userId: string): Promise<Booking[]>;
 	findOverlap(roomId: string, start: any, end: any): Promise<Booking[]>;
 	findBusySlots(roomId: string, rangeStart: any, rangeEnd: any): Promise<Booking[]>;
   updatePaymentInfo(

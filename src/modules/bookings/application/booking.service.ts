@@ -197,6 +197,9 @@ export class BookingService {
 	async getBookingByIdRoom(id: string): Promise<Booking | null> {
 		return this.bookingRepository.findByIdRoom(id);
 	}
+		async getBookingsForUser(userId: string): Promise<Booking[]> {
+			return this.bookingRepository.findByUserId(userId);
+		}
 	async getBusySlots(
 		roomId: string,
 		rangeStart: Date,

@@ -53,6 +53,14 @@ export class BookingMongoRepository implements IBookingRepository {
 		return this.getCollection().findOne({ roomId: _id });
 	}
 
+	async findByUserId(userId: string): Promise<Booking[]> {
+		if (!ObjectId.isValid(userId)) {
+			return [];
+		}
+		const _userId = new ObjectId(userId);
+		return this.getCollection().find({ userId: _userId }).sort({ start: -1 }).toArray();
+	}
+
 	async findOverlap(roomId: string, start: any, end: any): Promise<Booking[]> {
 		return this.getCollection()
 			.find({

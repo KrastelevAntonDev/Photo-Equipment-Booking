@@ -2,12 +2,15 @@ import { Request, Response } from 'express';
 import { UserService } from '../application/user.service';
 import { User, UserJwtPayload } from '../domain/user.entity';
 import { AdminCreateUserDTO } from './admin-create-user.dto';
+import { BookingService } from '@modules/bookings/application/booking.service';
 
 export class UserController {
   private userService: UserService;
+  private bookingService: BookingService;
 
   constructor() {
     this.userService = new UserService();
+    this.bookingService = new BookingService();
   }
   async getUserProfile(req: Request & { user?: UserJwtPayload }, res: Response) {
     try {
@@ -21,11 +24,14 @@ export class UserController {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      //remove passwordHash
+      // Подтягиваем полные объекты бронирований вместо одних ObjectId
+      const bookings = await this.bookingService.getBookingsForUser(userId);
+      // remove passwordHash и подменяем bookings для ответа
       const json = {
         ...user,
-        passwordHash: undefined
-      }
+        passwordHash: undefined,
+        bookings,
+      };
       res.json(json);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
