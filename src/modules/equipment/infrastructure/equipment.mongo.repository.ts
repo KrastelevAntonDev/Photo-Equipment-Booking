@@ -33,6 +33,16 @@ export class EquipmentMongoRepository implements IEquipmentRepository {
   async findByName(name: string): Promise<Equipment | null> {
     return this.getCollection().findOne({ name });
   }
+
+	async updateEquipment(id: string, data: Partial<Equipment>): Promise<Equipment | null> {
+		if (!ObjectId.isValid(id)) return null;
+		const _id = new ObjectId(id);
+		const update: any = { ...data, updatedAt: new Date() };
+		delete update._id;
+		const collection = this.getCollection();
+		await collection.updateOne({ _id }, { $set: update });
+		return collection.findOne({ _id });
+	}
 }
 
 export default EquipmentMongoRepository;

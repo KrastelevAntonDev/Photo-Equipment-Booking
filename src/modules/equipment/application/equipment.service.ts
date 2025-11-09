@@ -26,6 +26,10 @@ export class EquipmentService {
     return this.equipmentRepository.createEquipment(equipment);
   }
 
+  async updateEquipment(id: string, data: Partial<Equipment>): Promise<Equipment | null> {
+    return this.equipmentRepository.updateEquipment(id, data);
+  }
+
   async getEquipmentById(id: string): Promise<Equipment | null> {
     const eq = await this.equipmentRepository.findById(id);
     if (!eq) return null;

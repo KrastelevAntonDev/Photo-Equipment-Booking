@@ -250,6 +250,39 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       get: { tags: ['Rooms'], summary: 'Список залов', responses: { '200': { description: 'OK' } } },
       post: { tags: ['Rooms'], summary: 'Создать зал', responses: { '201': { description: 'Created' } } },
     },
+    '/rooms/{id}': {
+      put: {
+        tags: ['Rooms'],
+        summary: 'Обновить зал (админ)',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { type: 'object', description: 'Любые поля для обновления', properties: {
+            name: { type: 'string' },
+            address: { type: 'string' },
+            area: { type: 'number' },
+            pricePerHour: { type: 'number' },
+            colorScheme: { type: 'array', items: { type: 'string' } },
+            styles: { type: 'array', items: { type: 'string' } },
+            description: { type: 'string' },
+          } } } },
+        },
+        responses: {
+          '200': { description: 'Updated' },
+          '400': { description: 'Ошибка валидации' },
+          '404': { description: 'Зал не найден' },
+        },
+      },
+      get: {
+        tags: ['Rooms'],
+        summary: 'Получить зал по ID',
+        parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+        responses: { '200': { description: 'OK' }, '404': { description: 'Зал не найден' } },
+      }
+    },
     // Bookings
     '/bookings': {
       get: {
@@ -350,6 +383,30 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Equipment' } } },
           },
           '400': { description: 'Ошибка валидации' },
+        },
+      },
+    },
+    '/equipment/{id}': {
+      put: {
+        tags: ['Equipment'],
+        summary: 'Обновить оборудование (админ)',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { type: 'object', properties: {
+            name: { type: 'string' },
+            description: { type: 'string' },
+            pricePerHour: { type: 'number' },
+            image: { type: 'string' },
+          } } } },
+        },
+        responses: {
+          '200': { description: 'Updated' },
+          '400': { description: 'Ошибка валидации' },
+          '404': { description: 'Оборудование не найдено' },
         },
       },
     },

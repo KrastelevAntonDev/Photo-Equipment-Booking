@@ -27,6 +27,10 @@ export class RoomService {
     return this.roomRepository.createRoom(room);
   }
 
+  async updateRoom(id: string, data: Partial<Room>): Promise<Room | null> {
+    return this.roomRepository.updateRoom(id, data);
+  }
+
   async getRoomById(id: string): Promise<Room | null> {
     const room = await this.roomRepository.findById(id);
     if (!room) {
@@ -34,6 +38,10 @@ export class RoomService {
     }
     const images = await this.getRoomImageUrls(room.name);
     return { ...room, images } as Room;
+  }
+
+  async getRoomImagesByName(name: string): Promise<string[]> {
+    return this.getRoomImageUrls(name);
   }
 
   private async getRoomImageUrls(roomName: string): Promise<string[]> {

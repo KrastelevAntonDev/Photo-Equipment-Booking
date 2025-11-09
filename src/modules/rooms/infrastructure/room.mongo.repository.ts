@@ -32,6 +32,18 @@ export class RoomMongoRepository implements IRoomRepository {
 	async findByName(name: string): Promise<Room | null> {
 		return this.getCollection().findOne({ name });
 	}
+
+	async updateRoom(id: string, data: Partial<Room>): Promise<Room | null> {
+		if (!ObjectId.isValid(id)) {
+			return null;
+		}
+		const _id = new ObjectId(id);
+		const update = { ...data, updatedAt: new Date() };
+		delete update._id;
+		const collection = this.getCollection();
+		await collection.updateOne({ _id }, { $set: update });
+		return collection.findOne({ _id });
+	}
 }
 
 export default RoomMongoRepository;
