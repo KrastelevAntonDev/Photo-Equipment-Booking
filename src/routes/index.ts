@@ -9,6 +9,7 @@ import paymentRoutes from '@modules/payments/http/payment.routes';
 import roomRoutes from '@modules/rooms/http/room.routes';
 import subscriptionRoutes from '@modules/subscriptions/http/subscription.routes';
 import userRoutes from '@modules/users/http/user.routes';
+import ymlRoutes from '@modules/feeds/http/yml.routes';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use(paymentRoutes);
 router.use(roomRoutes);
 router.use(subscriptionRoutes);
 router.use(userRoutes);
+router.use(ymlRoutes);
 
 export default router;
