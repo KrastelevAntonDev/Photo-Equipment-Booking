@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional, IsBoolean, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateRoomDTO {
   @IsString()
@@ -14,6 +15,49 @@ export class CreateRoomDTO {
 
   @IsNumber()
   pricePerHour: number;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsNumber()
+  minBookingHours?: number;
+
+  @IsOptional()
+  @IsNumber()
+  ceilingHeightMeters?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  features?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  sharedSpace?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cycWall?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hasMakeupTable?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  noPassSystem?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Object)
+  pricing?: {
+    weekday_00_12?: number;
+    weekday_12_24?: number;
+    fri_17_24?: number;
+    weekend_holiday_00_24?: number;
+  };
 
   @IsArray()
   @IsString({ each: true })
@@ -36,7 +80,7 @@ export class CreateRoomDTO {
 		pricePerHour: number,
 		colorScheme: string[],
 		styles: string[],
-		description: string
+    description: string
 	) {
 		this.name = name;
 		this.address = address;

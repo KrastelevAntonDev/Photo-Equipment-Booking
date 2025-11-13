@@ -66,7 +66,7 @@ export class BookingService {
 		const equipmentIds = booking.equipmentIds
 			? booking.equipmentIds.map((id) => new ObjectId(id))
 			: [];
-		// Рассчёт стоимости: зал + оборудование * продолжительность
+		// Рассчёт стоимости по новым правилам: тариф комнаты по времени + оборудование
 		const eqIdsForPrice = (booking.equipmentIds || []).map((id: any) =>
 			id.toString()
 		);
@@ -271,6 +271,26 @@ export class BookingService {
 			throw new Error("Room already booked for this time");
 		}
 
+		// Пересчёт стоимости, если менялись ключевые параметры и totalPrice явно не передан
+		const needReprice =
+			typeof update.totalPrice === 'undefined' &&
+			(typeof update.roomId !== 'undefined' ||
+				typeof update.equipmentIds !== 'undefined' ||
+				typeof update.start !== 'undefined' ||
+				typeof update.end !== 'undefined');
+
+		if (needReprice) {
+			const targetRoomId = (update.roomId || existing.roomId).toString();
+			const targetEquip = (update.equipmentIds || existing.equipmentIds || []).map((e: any) => e.toString());
+			const computedTotal = await this.computeTotalPrice(
+				targetRoomId,
+				targetEquip,
+				newStart,
+				newEnd
+			);
+			update.totalPrice = computedTotal;
+		}
+
 		return this.bookingRepository.updatePartial(id, update);
 	}
 
@@ -296,7 +316,7 @@ export class BookingService {
 			return updated;
 		}
 
-	// Расчёт стоимости: (цена зала + сумма цен оборудования) * длительность (в часах)
+	// Расчёт стоимости по тарифам: покомпонентно по часам/получасам с учётом пятницы с 17:00 и выходных/праздников
 	private async computeTotalPrice(
 		roomId: string,
 		equipmentIds: string[],
@@ -317,8 +337,13 @@ export class BookingService {
 		if (endDate <= startDate)
 			throw new Error("End time must be after start time");
 
-		const ms = endDate.getTime() - startDate.getTime();
-		const hours = ms / 36e5;
+		// Минимальная длительность брони
+		if (room.minBookingHours && room.minBookingHours > 0) {
+			const diffH = (endDate.getTime() - startDate.getTime()) / 36e5;
+			if (diffH + 1e-9 < room.minBookingHours) {
+				throw new Error(`Минимальное время брони для зала "${room.name}" — ${room.minBookingHours} ч.`);
+			}
+		}
 
 		let equipmentSum = 0;
 		for (const eqId of equipmentIds) {
@@ -327,8 +352,57 @@ export class BookingService {
 			equipmentSum += eq.pricePerHour;
 		}
 
-		const rate = room.pricePerHour + equipmentSum;
-		const total = rate * hours;
+		// Итерация по часовым сегментам (с учётом неполных часов)
+		let total = 0;
+		let cursor = new Date(startDate);
+		while (cursor < endDate) {
+			const nextHour = new Date(cursor);
+			nextHour.setMinutes(0, 0, 0);
+			if (nextHour <= cursor) nextHour.setHours(nextHour.getHours() + 1);
+			const segmentEnd = endDate < nextHour ? endDate : nextHour;
+			const segmentHours = (segmentEnd.getTime() - cursor.getTime()) / 36e5;
+
+			const roomRate = this.resolveRoomRate(room, cursor);
+			total += (roomRate + equipmentSum) * segmentHours;
+
+			cursor = segmentEnd;
+		}
+
 		return Math.round(total * 100) / 100;
+	}
+
+	private isWeekend(d: Date): boolean {
+		const day = d.getDay(); // 0=Sunday,6=Saturday
+		return day === 0 || day === 6;
+	}
+
+	// Праздники можно подключать из конфига; пока пусто
+	private isHoliday(_d: Date): boolean {
+		return false;
+	}
+
+	private resolveRoomRate(room: any, dt: Date): number {
+		const pricing = room.pricing || {};
+		const hour = dt.getHours();
+		const isFri = dt.getDay() === 5;
+		const weekendOrHoliday = this.isWeekend(dt) || this.isHoliday(dt);
+
+		if (weekendOrHoliday) {
+			if (typeof pricing.weekend_holiday_00_24 === 'number') return pricing.weekend_holiday_00_24;
+		}
+		if (isFri && hour >= 17) {
+			if (typeof pricing.fri_17_24 === 'number') return pricing.fri_17_24;
+			if (typeof pricing.weekend_holiday_00_24 === 'number') return pricing.weekend_holiday_00_24;
+		}
+
+		// Будни и пятница до 17:00
+		if (hour < 12) {
+			if (typeof pricing.weekday_00_12 === 'number') return pricing.weekday_00_12;
+		} else {
+			if (typeof pricing.weekday_12_24 === 'number') return pricing.weekday_12_24;
+		}
+
+		// Фоллбек — используем базовую цену, если правила не заданы
+		return room.pricePerHour || 0;
 	}
 }

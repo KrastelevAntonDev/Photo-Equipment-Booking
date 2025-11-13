@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -16,6 +17,8 @@ import openapiSpec from '@config/swagger';
 import { seedAdmins } from './seed/admin.seed';
 import { seedRooms } from './seed/room.seed';
 import { seedEquipment } from './seed/equipment.seed';
+import { roomPricingSeed } from './seed/rooms.pricing.seed';
+
 import { env, isProd } from '@config/env';
 import { errorHandler } from '@shared/errors/error.middleware';
 
@@ -46,6 +49,7 @@ const app = express();
     await seedAdmins();
 		await seedRooms();
     await seedEquipment();
+		await roomPricingSeed();
   } catch (err) {
     console.error('❌ Initial DB connection failed:', err);
     process.exit(1);

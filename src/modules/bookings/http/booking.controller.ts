@@ -84,7 +84,7 @@ export class BookingController {
       res.json(updated);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const status = /already booked|End time/.test(errorMessage) ? 400 : 500;
+      const status = /already booked|End time|Минимальное время брони/.test(errorMessage) ? 400 : 500;
       res.status(status).json({ message: errorMessage });
     }
   }

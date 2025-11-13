@@ -20,6 +20,41 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       },
     },
     schemas: {
+      RoomPricing: {
+        type: 'object',
+        properties: {
+          weekday_00_12: { type: 'number' },
+          weekday_12_24: { type: 'number' },
+          fri_17_24: { type: 'number' },
+          weekend_holiday_00_24: { type: 'number' },
+        },
+      },
+      Room: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          name: { type: 'string' },
+          address: { type: 'string' },
+          area: { type: 'number' },
+          pricePerHour: { type: 'number' },
+          category: { type: 'string' },
+          minBookingHours: { type: 'number' },
+          ceilingHeightMeters: { type: 'number' },
+          features: { type: 'array', items: { type: 'string' } },
+          sharedSpace: { type: 'boolean' },
+          cycWall: { type: 'boolean' },
+          hasMakeupTable: { type: 'boolean' },
+          noPassSystem: { type: 'boolean' },
+          pricing: { $ref: '#/components/schemas/RoomPricing' },
+          colorScheme: { type: 'array', items: { type: 'string' } },
+          styles: { type: 'array', items: { type: 'string' } },
+          description: { type: 'string' },
+          images: { type: 'array', items: { type: 'string' } },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          isDeleted: { type: 'boolean' },
+        },
+      },
       // DTOs
       LoginDTO: {
         type: 'object',
@@ -247,7 +282,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     },
     // Rooms
     '/rooms': {
-      get: { tags: ['Rooms'], summary: 'Список залов', responses: { '200': { description: 'OK' } } },
+      get: { tags: ['Rooms'], summary: 'Список залов', responses: { '200': { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Room' } } } } } } },
       post: { tags: ['Rooms'], summary: 'Создать зал', responses: { '201': { description: 'Created' } } },
     },
     '/rooms/{id}': {
