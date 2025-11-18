@@ -114,11 +114,9 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             };
             
-            // Базовый текст SMS
-            let smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб.`;
-            
             // Получаем ссылку на чек, если есть receipt_id
             let receiptUrl: string | null = null;
+            let link: string | undefined = undefined;
 						console.log(paymentSuccess);
 						
             if (paymentSuccess.receipt?.id) {
@@ -128,20 +126,26 @@ router.post('/webhook', (async (req: Request, res: Response) => {
                 if (receipt && receipt.status === 'succeeded') {
                   receiptUrl = buildReceiptUrl(receipt);
                   if (receiptUrl) {
-                    smsText += ` Чек: ${receiptUrl}`;
+                    link = receiptUrl; // Будет использоваться с #shorturl#
                   }
                 }
               } catch (receiptError: any) {
                 console.warn(`Failed to get receipt for payment ${paymentSuccess.id}:`, receiptError.message);
                 // Продолжаем отправку SMS без ссылки на чек
               }
-            }else{
+            } else {
 							console.log('No receipt ID available for payment:', paymentSuccess.id);
 						}
             
-            // Если не получилось добавить чек, добавляем стандартное окончание
-            if (!receiptUrl) {
-              smsText += ' Ждём вас!';
+            // Формируем текст SMS с использованием шаблона P1SMS
+            // Шаблон: Оплата подтверждена! Бронь зала "%w" на %d с %d до %d. Сумма: %d руб. Чек: #shorturl#
+            let smsText: string;
+            if (receiptUrl) {
+              // С чеком - используем #shorturl# для автоматического сокращения ссылки
+              smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб. Чек: ${receiptUrl}`;
+            } else {
+              // Без чека
+              smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб. Ждём вас!`;
             }
             
             // Проверяем формат номера (должен быть 11 цифр без +)
@@ -157,6 +161,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
                   channel: 'digit',
                   text: smsText,
                   tag: 'booking_paid',
+                  link: link, // Ссылка для замены #shorturl#
                 }]
               });
               console.log(`SMS sent to ${phone} for booking ${booking._id}${receiptUrl ? ' with receipt link' : ''}`);
