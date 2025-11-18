@@ -96,6 +96,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           const booking = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
           const user = await userRepository.findById(paymentSuccess.metadata.userId);
           const room = booking ? await roomRepository.findById(booking.roomId.toString()) : null;
+						console.log(paymentSuccess);
           
           if (booking && user && user.phone && room) {
             // Форматируем дату и время
@@ -113,6 +114,8 @@ router.post('/webhook', (async (req: Request, res: Response) => {
             
             // Получаем ссылку на чек, если есть receipt_id
             let receiptUrl: string | null = null;
+						console.log(paymentSuccess);
+						
             if (paymentSuccess.receipt?.id) {
               try {
                 const receipt = await paymentService.getReceipt(paymentSuccess.receipt.id);
@@ -152,6 +155,9 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               console.warn(`Invalid phone format for user ${user._id}: ${user.phone}`);
             }
           }
+					else{
+						console.warn('Missing booking, user, or room data for SMS notification');
+					}
         } catch (smsError: any) {
           console.error('Failed to send SMS notification:', smsError.message);
           // Не прерываем обработку webhook, если SMS не отправилась
