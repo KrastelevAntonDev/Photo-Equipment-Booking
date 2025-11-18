@@ -122,6 +122,10 @@ router.post('/webhook', (async (req: Request, res: Response) => {
             if (paymentSuccess.receipt?.id) {
 							console.log('Receipt ID:', paymentSuccess.receipt.id);
               try {
+                // Ждём 30 секунд, чтобы чек успел сформироваться в ОФД
+                console.log('Waiting 30 seconds for receipt to be processed...');
+                await new Promise(resolve => setTimeout(resolve, 30000));
+                
                 const receipt = await paymentService.getReceipt(paymentSuccess.receipt.id);
                 if (receipt && receipt.status === 'succeeded') {
                   receiptUrl = buildReceiptUrl(receipt);
