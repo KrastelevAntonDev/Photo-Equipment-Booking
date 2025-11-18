@@ -174,6 +174,100 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           isDeleted: { type: 'boolean' },
         },
       },
+      // SMS
+      SmsViberParametersDTO: {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string', enum: ['text', 'link', 'phone'], description: 'Тип Viber сообщения' },
+          btnText: { type: 'string', description: 'Текст кнопки' },
+          btnLink: { type: 'string', description: 'Ссылка кнопки' },
+          btnPhone: { type: 'string', description: 'Номер кнопки' },
+          imageHash: { type: 'string', description: 'Хэш загруженной картинки' },
+          smsLifetime: { type: 'integer', description: 'Время жизни сообщения (мс)' },
+        },
+      },
+      SmsVkParametersDTO: {
+        type: 'object',
+        required: ['templateId', 'tmpl_data'],
+        properties: {
+          templateId: { type: 'integer', description: 'ID шаблона ВК' },
+          tmpl_data: { type: 'string', description: 'JSON строка переменных шаблона' },
+          userId: { type: 'integer' },
+          pushToken: { type: 'string' },
+          pushApp: { type: 'string' },
+          pushEncrypt: { type: 'integer', enum: [0, 1] },
+          userIp: { type: 'string' },
+          ttl: { type: 'integer', description: 'Время жизни (сек)' },
+          issueTime: { type: 'integer', description: 'Unix timestamp создания' },
+        },
+      },
+      SmsWaParametersDTO: {
+        type: 'object',
+        required: ['template', 'language'],
+        properties: {
+          template: { type: 'string', description: 'Название WhatsApp шаблона' },
+          language: { type: 'string', description: 'Язык (ru, en и т.д.)' },
+        },
+      },
+      SmsItemDTO: {
+        type: 'object',
+        required: ['phone', 'channel'],
+        properties: {
+          phone: { type: 'string', maxLength: 11, description: 'Номер без + (11 цифр)' },
+          text: { type: 'string', description: 'Текст сообщения' },
+          link: { type: 'string', description: 'Ссылка для подстановки #shorturl#' },
+          linkTtl: { type: 'integer', description: 'Срок жизни ссылки (мин)' },
+          channel: { type: 'string', enum: ['digit', 'char', 'viber', 'vk', 'whatsapp', 'ww', 'zip', 'telegram', 'auth', 'ping', 'hit'], description: 'Канал' },
+          sender: { type: 'string', description: 'Имя отправителя (для char, viber и пр.)' },
+          plannedAt: { type: 'integer', description: 'Unix timestamp отложенной отправки' },
+          viberParameters: { $ref: '#/components/schemas/SmsViberParametersDTO' },
+          vkParameters: { $ref: '#/components/schemas/SmsVkParametersDTO' },
+          header: { type: 'object', properties: { text: { type: 'string' } }, description: 'Заголовок для WhatsApp' },
+          waParameters: { $ref: '#/components/schemas/SmsWaParametersDTO' },
+          cascadeSchemeId: { type: 'integer', description: 'ID схемы каскадных сообщений' },
+          tag: { type: 'string', maxLength: 20, description: 'Тег для сортировки' },
+          randomizer: { type: 'integer', enum: [0, 1], description: 'Рандомизация текста' },
+          randomizerOptions: { type: 'object', properties: { translate: { type: 'integer', enum: [0, 1] }, locked: { type: 'array', items: { type: 'string' } } } },
+        },
+      },
+      SendSmsDTO: {
+        type: 'object',
+        required: ['sms'],
+        properties: {
+          webhookUrl: { type: 'string', description: 'URL для webhook статусов' },
+          sms: { type: 'array', items: { $ref: '#/components/schemas/SmsItemDTO' }, maxItems: 1000 },
+        },
+      },
+      SmsStatusItem: {
+        type: 'object',
+        properties: {
+          sms_id: { type: 'integer' },
+          sms_status: { type: 'string', enum: ['created', 'moderation', 'sent', 'error', 'delivered', 'not_delivered', 'read', 'planned', 'low_balance', 'low_partner_balance', 'rejected'] },
+          receive_date: { type: 'string', format: 'date-time', description: 'YYYY-MM-DD HH:mm:ss' },
+        },
+      },
+      SmsInfoResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          data: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: {
+                id: { type: 'integer' },
+                errorDescription: { type: 'string' },
+                cost: { type: 'string' },
+                createdAt: { type: 'integer' },
+                updatedAt: { type: 'integer' },
+                cascadeSmsId: { type: 'integer' },
+                status: { type: 'string' },
+              } 
+            } 
+          },
+        },
+      },
     },
   },
   tags: [
@@ -184,9 +278,393 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     { name: 'Bookings' },
     { name: 'Forms' },
     { name: 'Payments' },
-    { name: 'SMS' },
+    { name: 'SMS', description: 'Отправка SMS/Omni, управление, вебхуки, статистика' },
   ],
   paths: {
+    // SMS
+    '/sms/send': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Отправка SMS/Omni сообщений',
+        description: 'Создание и отправка SMS через P1SMS провайдера. Поддерживаются каналы: digit, char, viber, vk, whatsapp, telegram и другие. Максимум 1000 сообщений в одном запросе.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/SendSmsDTO' },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Сообщения созданы и отправлены' },
+          '400': { description: 'Ошибка валидации или параметров' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+    },
+    '/sms/viber/image': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Загрузка изображения для Viber',
+        description: 'Загрузка картинки (jpg/png) для использования в Viber сообщениях. Возвращает imageHash.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  img: { type: 'string', format: 'binary' } 
+                }, 
+                required: ['img'] 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Изображение загружено' },
+          '400': { description: 'Файл не получен или ошибка' },
+        },
+      },
+    },
+    '/sms/reject': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Отмена сообщений в статусе модерации',
+        description: 'Отменить отправку SMS, которые находятся в статусе "moderation".',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  smsId: { type: 'array', items: { type: 'integer' } } 
+                }, 
+                required: ['smsId'] 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/change-planned-time': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Изменение времени отправки запланированных SMS',
+        description: 'Изменить plannedAt у сообщений в статусе "planned".',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  smsId: { type: 'array', items: { type: 'integer' } }, 
+                  plannedAt: { type: 'integer', description: 'Unix timestamp' } 
+                }, 
+                required: ['smsId', 'plannedAt'] 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Время изменено' },
+        },
+      },
+    },
+    '/sms/info': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Информация о сообщениях по ID',
+        description: 'Получить детальную информацию о сообщениях (стоимость, статус, время создания). Лимит: 1000 ID.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  apiSmsIdList: { type: 'array', items: { type: 'integer' } } 
+                }, 
+                required: ['apiSmsIdList'] 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { 
+            description: 'OK', 
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/SmsInfoResponse' } 
+              } 
+            } 
+          },
+        },
+      },
+    },
+    '/sms/status': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Статусы сообщений',
+        description: 'Получить статусы SMS по списку smsId (query параметры smsId[0], smsId[1], ...).',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { 
+            name: 'smsId', 
+            in: 'query', 
+            schema: { type: 'array', items: { type: 'integer' } }, 
+            style: 'form', 
+            explode: true, 
+            description: 'ID сообщений' 
+          },
+        ],
+        responses: {
+          '200': { 
+            description: 'OK', 
+            content: { 
+              'application/json': { 
+                schema: { 
+                  type: 'array', 
+                  items: { $ref: '#/components/schemas/SmsStatusItem' } 
+                } 
+              } 
+            } 
+          },
+        },
+      },
+    },
+    '/sms/list': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Список отправленных сообщений',
+        description: 'Получить список SMS с фильтрами по датам, статусам, каналам. Пагинация (20 по умолчанию, макс. 500).',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer' }, description: 'Номер страницы' },
+          { name: 'pageCapacity', in: 'query', schema: { type: 'integer', maximum: 500 }, description: 'Записей на странице (макс. 500)' },
+          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Поиск по номеру телефона' },
+          { name: 'from', in: 'query', schema: { type: 'integer' }, description: 'Timestamp начала' },
+          { name: 'to', in: 'query', schema: { type: 'integer' }, description: 'Timestamp конца' },
+          { name: 'column', in: 'query', schema: { type: 'string', enum: ['created_at', 'updated_at', 'sent_at'] }, description: 'Поле сортировки' },
+          { name: 'order', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] }, description: 'Порядок сортировки' },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/planned': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Список запланированных сообщений',
+        description: 'Получить список SMS в статусе "planned" (20 записей на страницу).',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer' }, description: 'Номер страницы' },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/statistics': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Статистика по SMS',
+        description: 'Получить агрегированную статистику отправок: стоимость, количество доставленных/недоставленных, прочитанных.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'startDate', in: 'query', schema: { type: 'integer' }, description: 'Unix timestamp начала' },
+          { name: 'endDate', in: 'query', schema: { type: 'integer' }, description: 'Unix timestamp конца' },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/phone-bases/{phoneBaseId}/phones': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Добавление номеров в базу',
+        description: 'Добавить номера телефонов в существующую базу номеров.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'phoneBaseId', in: 'path', required: true, schema: { type: 'integer' }, description: 'ID базы номеров' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  phones: { 
+                    type: 'array', 
+                    items: { 
+                      type: 'object', 
+                      properties: { 
+                        phone: { type: 'string' }, 
+                        additionalcolumns: { type: 'object' } 
+                      } 
+                    } 
+                  } 
+                }, 
+                required: ['phones'] 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Добавлены' },
+        },
+      },
+    },
+    '/sms/base-phones': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Список абонентов базы',
+        description: 'Получить список номеров из базы (100 записей на страницу).',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'baseId', in: 'query', required: true, schema: { type: 'integer' }, description: 'ID базы' },
+          { name: 'page', in: 'query', schema: { type: 'integer' } },
+          { name: 'column', in: 'query', schema: { type: 'string' }, description: 'Поле сортировки (created_at)' },
+          { name: 'order', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] } },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/bases': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Список баз номеров',
+        description: 'Получить список всех баз номеров пользователя.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/blacklist': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Чёрный список',
+        description: 'Получить список номеров из чёрного списка (100 записей на страницу).',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer' } },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/templates/vk': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Шаблоны VK (ВКонтакте)',
+        description: 'Получить список доступных шаблонов для отправки через ВКонтакте.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/cascade-schemes': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Схемы каскадных сообщений',
+        description: 'Получить список схем каскадных рассылок.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Строка поиска' },
+        ],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/senders': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Создание отправителя',
+        description: 'Создать нового отправителя (sender) для SMS. Требуется для буквенных каналов.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', description: 'Канал (char)' },
+                  name: { type: 'string', description: 'Имя отправителя (до 11 символов)' },
+                  companyName: { type: 'string', description: 'Название компании' },
+                  link: { type: 'string', description: 'Ссылка на сайт компании' },
+                  attachments: { 
+                    type: 'array', 
+                    items: { type: 'string', format: 'binary' }, 
+                    description: 'Файлы (doc, pdf, png)' 
+                  },
+                },
+                required: ['type', 'name', 'companyName', 'link'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Отправитель создан' },
+        },
+      },
+    },
+    '/sms/balance': {
+      get: {
+        tags: ['SMS'],
+        summary: 'Баланс клиента',
+        description: 'Получить текущий баланс на аккаунте P1SMS.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
+    '/sms/webhook': {
+      post: {
+        tags: ['SMS'],
+        summary: 'Webhook статусов (от провайдера)',
+        description: 'Принимает уведомления от P1SMS об изменении статусов сообщений. Этот URL передаётся провайдеру при отправке.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { 
+                type: 'object', 
+                properties: { 
+                  sms_id: { type: 'integer' }, 
+                  sms_status: { type: 'string' }, 
+                  receive_date: { type: 'string' } 
+                } 
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'OK' },
+        },
+      },
+    },
     // Auth
     '/login': {
       post: {
