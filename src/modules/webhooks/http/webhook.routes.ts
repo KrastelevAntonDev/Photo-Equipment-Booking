@@ -9,6 +9,7 @@ import { SmsService } from '@modules/sms/application/sms.service';
 import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.repository';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { buildReceiptUrl } from '@shared/utils/receipt.utils';
+import { PaymentCurrency } from '@/modules/payments/domain/payment.entity';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -71,21 +72,22 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           console.warn('Missing metadata in payment success webhook');
           break;
         }
-        // Сохраняем платёж
-        paymentService.createPayment({
-          bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
+				const paymentData = {
+					bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
           userId: new ObjectId(paymentSuccess.metadata.userId),
           yookassaId: paymentSuccess.id,
           status: paymentSuccess.status as PaymentStatus,
           amount: Number(paymentSuccess.amount.value),
-          currency: 'RUB',
+          currency: PaymentCurrency.RUB,
           paid: paymentSuccess.paid,
           refundable: paymentSuccess.refundable,
           metadata: paymentSuccess.metadata,
           // даты от провайдера
           paidAt: paymentSuccess.captured_at ? new Date(paymentSuccess.captured_at) : (paymentSuccess.paid ? new Date(paymentSuccess.created_at) : undefined),
           createdAt: new Date(paymentSuccess.created_at),
-        })
+				}
+        // Сохраняем платёж
+        await paymentService.createPayment(paymentData);
         // Регистрируем оплату в брони (накопительным итогом)
         if (paymentSuccess.paid === true) {
           await bookingService.registerPayment(paymentSuccess.metadata.bookingId, Number(paymentSuccess.amount.value));
@@ -190,15 +192,16 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           console.warn('Missing metadata in payment cancel webhook');
           break;
         }
-        paymentService.createPayment({
+        await paymentService.createPayment({
           bookingId: new ObjectId(paymentCancel.metadata.bookingId),
           userId: new ObjectId(paymentCancel.metadata.userId),
           yookassaId: paymentCancel.id,
           status: paymentCancel.status as PaymentStatus,
           amount: Number(paymentCancel.amount.value),
-          currency: 'RUB',
+          currency: PaymentCurrency.RUB,
           paid: paymentCancel.paid,
           refundable: paymentCancel.refundable,
+          metadata: paymentCancel.metadata,
           createdAt: new Date(paymentCancel.created_at),
         })
         console.log(`Payment canceled: ${paymentCancel.id}`);
