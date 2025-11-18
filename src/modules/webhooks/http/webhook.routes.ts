@@ -93,7 +93,11 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         
         // Отправка SMS уведомления пользователю
         try {
+					console.log('Sending SMS notification for payment:', paymentSuccess.id);
+					
+					console.log('booking id:', paymentSuccess.metadata.bookingId);
           const booking = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
+					console.log('user id:', paymentSuccess.metadata.userId);
           const user = await userRepository.findById(paymentSuccess.metadata.userId);
           const room = booking ? await roomRepository.findById(booking.roomId.toString()) : null;
 						console.log(paymentSuccess);
