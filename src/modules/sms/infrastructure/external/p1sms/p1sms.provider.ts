@@ -17,7 +17,9 @@ export class P1SmsHttpProvider implements P1SmsProvider {
 
   async create(payload: P1SmsCreateRequest): Promise<P1SmsCreateResponse> {
     const body = { ...payload, apiKey: this.apiKey };
+		console.log('Sending SMS with payload:', body);
     const { data } = await this.client.post('/apiSms/create', body, { headers: { 'Content-Type': 'application/json' } });
+		console.log('Received response from SMS provider:', data);
     return data as P1SmsCreateResponse;
   }
 
