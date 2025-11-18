@@ -269,6 +269,16 @@ Fashion, рекламные съемки, арт-проекты  - здесь м
 "`,
 		images: [],
 	},
+	{
+		name: "test payment",
+		address: "",
+		area: 0,
+		pricePerHour: 10,
+		colorScheme: [],
+		styles: [],
+		description: "",
+		images: []
+	}
 ];
 
 export async function seedRooms() {

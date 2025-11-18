@@ -5,6 +5,9 @@ import * as net from 'net'; // For IP validation
 import { ObjectId } from 'mongodb';
 import { BookingService } from '@modules/bookings/application/booking.service';
 import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
+import { SmsService } from '@modules/sms/application/sms.service';
+import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.repository';
+import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -34,6 +37,10 @@ function _isValidYooKassaIp(ip: string): boolean {
 
 const paymentService = new PaymentService();
 const bookingService = new BookingService();
+const smsService = new SmsService();
+const userRepository = new UserMongoRepository();
+const roomRepository = new RoomMongoRepository();
+
 router.post('/webhook', (async (req: Request, res: Response) => {
   // const clientIp = req.ip || req.connection.remoteAddress || '';
   // if (!isValidYooKassaIp(clientIp)) {
@@ -82,6 +89,51 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         if (paymentSuccess.paid === true) {
           await bookingService.registerPayment(paymentSuccess.metadata.bookingId, Number(paymentSuccess.amount.value));
         }
+        
+        // Отправка SMS уведомления пользователю
+        try {
+          const booking = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
+          const user = await userRepository.findById(paymentSuccess.metadata.userId);
+          const room = booking ? await roomRepository.findById(booking.roomId.toString()) : null;
+          
+          if (booking && user && user.phone && room) {
+            // Форматируем дату и время
+            const formatDate = (date: Date) => {
+              const d = new Date(date);
+              return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            };
+            const formatTime = (date: Date) => {
+              const d = new Date(date);
+              return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            };
+            
+            const smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб. Ждём вас!`;
+            
+            // Проверяем формат номера (должен быть 11 цифр без +)
+            let phone = user.phone.replace(/\D/g, '');
+            if (phone.startsWith('8')) {
+              phone = '7' + phone.substring(1);
+            }
+            if (phone.length === 11 && phone.startsWith('7')) {
+              await smsService.send({
+                sms: [{
+                  phone,
+                  channel: 'digit',
+                  text: smsText,
+                  tag: 'booking_paid',
+									
+                }]
+              });
+              console.log(`SMS sent to ${phone} for booking ${booking._id}`);
+            } else {
+              console.warn(`Invalid phone format for user ${user._id}: ${user.phone}`);
+            }
+          }
+        } catch (smsError: any) {
+          console.error('Failed to send SMS notification:', smsError.message);
+          // Не прерываем обработку webhook, если SMS не отправилась
+        }
+        
         console.log(`Payment succeeded: ${paymentSuccess.id}`);
         break;
       case WebhookEventType.PaymentCanceled:
