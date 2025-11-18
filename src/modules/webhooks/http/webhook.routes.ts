@@ -74,6 +74,9 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           paid: paymentSuccess.paid,
           refundable: paymentSuccess.refundable,
           metadata: paymentSuccess.metadata,
+          // даты от провайдера
+          paidAt: paymentSuccess.captured_at ? new Date(paymentSuccess.captured_at) : (paymentSuccess.paid ? new Date(paymentSuccess.created_at) : undefined),
+          createdAt: new Date(paymentSuccess.created_at),
         })
         // Регистрируем оплату в брони (накопительным итогом)
         if (paymentSuccess.paid === true) {
@@ -97,6 +100,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           currency: 'RUB',
           paid: paymentCancel.paid,
           refundable: paymentCancel.refundable,
+          createdAt: new Date(paymentCancel.created_at),
         })
         console.log(`Payment canceled: ${paymentCancel.id}`);
         break;

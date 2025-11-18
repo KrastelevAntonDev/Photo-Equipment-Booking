@@ -16,7 +16,7 @@ export class AuthService {
     this.adminRepository = new AdminMongoRepository();
   }
 
-  async register(email: string, password: string, phone?: string): Promise<{status: boolean}> {
+  async register(email: string, password: string, phone?: string, fullName?: string): Promise<{status: boolean}> {
     const existing = await this.userRepository.findByEmail(email);
     if (existing) throw new Error('User already exists');
     const passwordHash = await bcrypt.hash(password, 10);
@@ -24,6 +24,7 @@ export class AuthService {
       email,
       passwordHash,
       phone,
+      fullName,
       balance: 0,
       points: 0,
       bookings: [],
@@ -40,7 +41,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('Invalid password');
     const token = jwt.sign(
-      { userId: user._id, email: user.email, phone: user.phone },
+      { userId: user._id, email: user.email, phone: user.phone, fullName: user.fullName },
       JWT_SECRET,
       { expiresIn: '24h' }
     );

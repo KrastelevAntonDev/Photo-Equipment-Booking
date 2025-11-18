@@ -12,6 +12,7 @@ export interface Payment {
   paid: boolean;
   refundable: boolean;
   refundedAmount?: number;
+  paidAt?: Date; // Дата/время успешной оплаты по данным провайдера
   createdAt?: Date;
   updatedAt?: Date;
   metadata?: Record<string, any>;

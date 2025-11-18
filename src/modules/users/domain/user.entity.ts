@@ -5,6 +5,7 @@ export interface User {
   email: string;
   passwordHash: string;
   phone?: string;
+  fullName?: string;
   favoriteRoomIds?: ObjectId[];   // если хранишь ссылки на другие документы
   balance: number;
   points: number;
@@ -20,6 +21,7 @@ export interface UserJwtPayload {
   userId: string;
   email: string;
   phone: string;
+  fullName?: string;
   iat: number;
   exp: number;
 }

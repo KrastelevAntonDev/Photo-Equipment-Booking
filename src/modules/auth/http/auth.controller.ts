@@ -10,8 +10,8 @@ export class AuthController {
 
   async register(req: Request, res: Response) {
     try {
-      const { email, password, phone } = req.body;
-      const user = await this.authService.register(email, password, phone);
+      const { email, password, phone, fullName } = req.body;
+      const user = await this.authService.register(email, password, phone, fullName);
       res.status(201).json({ message: 'User registered', user });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

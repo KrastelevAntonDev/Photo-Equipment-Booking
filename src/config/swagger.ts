@@ -71,6 +71,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           email: { type: 'string', format: 'email' },
           password: { type: 'string', minLength: 6 },
           phone: { type: 'string' },
+          fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
       CreateBookingDTO: {

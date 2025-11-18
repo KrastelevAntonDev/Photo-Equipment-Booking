@@ -18,8 +18,14 @@ export class PaymentMongoRepository implements IPaymentRepository {
 	}
 
 	async createPayment(payment: Payment): Promise<Payment> {
-		const result = await this.getCollection().insertOne(payment);
-		return { ...payment, _id: result.insertedId };
+		const now = new Date();
+		const toInsert: Payment = {
+			...payment,
+			createdAt: payment.createdAt ?? now,
+			updatedAt: now,
+		};
+		const result = await this.getCollection().insertOne(toInsert);
+		return { ...toInsert, _id: result.insertedId };
 	}
 
 	async findById(id: string): Promise<Payment | null> {
