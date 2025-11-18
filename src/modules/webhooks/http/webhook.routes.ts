@@ -100,9 +100,10 @@ router.post('/webhook', (async (req: Request, res: Response) => {
 					console.log('user id:', paymentSuccess.metadata.userId);
           const user = await userRepository.findById(paymentSuccess.metadata.userId);
           const room = booking ? await roomRepository.findById(booking.roomId.toString()) : null;
-						console.log(paymentSuccess);
           
           if (booking && user && user.phone && room) {
+						console.log('found booking, user, and room for SMS notification');
+						
             // Форматируем дату и время
             const formatDate = (date: Date) => {
               const d = new Date(date);
@@ -121,6 +122,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
 						console.log(paymentSuccess);
 						
             if (paymentSuccess.receipt?.id) {
+							console.log('Receipt ID:', paymentSuccess.receipt.id);
               try {
                 const receipt = await paymentService.getReceipt(paymentSuccess.receipt.id);
                 if (receipt && receipt.status === 'succeeded') {
@@ -133,7 +135,9 @@ router.post('/webhook', (async (req: Request, res: Response) => {
                 console.warn(`Failed to get receipt for payment ${paymentSuccess.id}:`, receiptError.message);
                 // Продолжаем отправку SMS без ссылки на чек
               }
-            }
+            }else{
+							console.log('No receipt ID available for payment:', paymentSuccess.id);
+						}
             
             // Если не получилось добавить чек, добавляем стандартное окончание
             if (!receiptUrl) {
@@ -146,6 +150,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               phone = '7' + phone.substring(1);
             }
             if (phone.length === 11 && phone.startsWith('7')) {
+							console.log('Sending SMS to phone:', phone);
               await smsService.send({
                 sms: [{
                   phone,

@@ -13,6 +13,7 @@ export class SmsService {
   }
 
   async send(payload: Omit<P1SmsCreateRequest, 'apiKey'>) {
+		console.log('Sending SMS with payload:', payload);
     const res = await this.provider.create(payload as P1SmsCreateRequest);
     // Provider returns complex data; we store request/response for audit
     const created: SmsMessage[] = [];
