@@ -184,6 +184,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     { name: 'Bookings' },
     { name: 'Forms' },
     { name: 'Payments' },
+    { name: 'SMS' },
   ],
   paths: {
     // Auth

@@ -17,6 +17,10 @@ const EnvSchema = z.object({
   // Payments
   SHOP_ID: z.string().optional(),
   SECRET_KEY: z.string().optional(),
+
+  // SMS Provider (P1SMS)
+  P1SMS_API_KEY: z.string().optional(),
+  P1SMS_BASE_URL: z.string().default('https://admin.p1sms.ru'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

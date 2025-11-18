@@ -10,6 +10,7 @@ import roomRoutes from '@modules/rooms/http/room.routes';
 import subscriptionRoutes from '@modules/subscriptions/http/subscription.routes';
 import userRoutes from '@modules/users/http/user.routes';
 import ymlRoutes from '@modules/feeds/http/yml.routes';
+import smsRoutes from '@modules/sms/http/sms.routes';
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use(roomRoutes);
 router.use(subscriptionRoutes);
 router.use(userRoutes);
 router.use(ymlRoutes);
+router.use(smsRoutes);
 
 export default router;
