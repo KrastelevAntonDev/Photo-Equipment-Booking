@@ -1,5 +1,5 @@
 import { YooKassaHttpClient } from '@infrastructure/external/yookassa/yookassa.client';
-import { Amount, CreatePaymentRequest, CreateRefundRequest, Payment, Refund, PaymentMethod } from '@infrastructure/external/yookassa/yookassa.types';
+import { Amount, CreatePaymentRequest, CreateRefundRequest, Payment, Refund, PaymentMethod, ReceiptResponse } from '@infrastructure/external/yookassa/yookassa.types';
 import { PaymentProvider } from '../../domain/payment.provider';
 
 export class YooKassaProvider implements PaymentProvider {
@@ -40,5 +40,9 @@ export class YooKassaProvider implements PaymentProvider {
 
   deletePaymentMethod(paymentMethodId: string): Promise<void> {
     return this.client.deletePaymentMethod(paymentMethodId);
+  }
+
+  getReceipt(receiptId: string): Promise<ReceiptResponse> {
+    return this.client.getReceipt(receiptId);
   }
 }

@@ -110,6 +110,9 @@ export interface Payment {
   paid: boolean;
   refundable: boolean;
   receipt_registration?: 'pending' | 'succeeded' | 'canceled';
+  receipt?: {
+    id?: string;
+  };
   metadata?: Record<string, string>;
   cancellation_details?: {
     party: 'yookassa' | 'merchant' | 'payment_network';
@@ -219,3 +222,32 @@ export interface DealSettlement { type: 'payout'; amount: Amount }
 export interface WebhookNotification { type: 'notification'; event: WebhookEventType; object: Payment | Refund }
 
 export interface ApiError { type: 'error'; id: string; code: string; description: string; parameter?: string }
+
+// Receipts
+export enum ReceiptStatus {
+  Pending = 'pending',
+  Succeeded = 'succeeded',
+  Canceled = 'canceled',
+}
+
+export enum ReceiptType {
+  Payment = 'payment',
+  Refund = 'refund',
+}
+
+export interface ReceiptResponse {
+  id: string;
+  type: ReceiptType;
+  status: ReceiptStatus;
+  payment_id?: string;
+  refund_id?: string;
+  fiscal_document_number?: string;
+  fiscal_storage_number?: string;
+  fiscal_attribute?: string;
+  registered_at?: string;
+  fiscal_provider_id?: string;
+  tax_system_code?: 1 | 2 | 3 | 4 | 5 | 6;
+  items: ReceiptItem[];
+  settlements?: Settlement[];
+  on_behalf_of?: string;
+}

@@ -12,6 +12,8 @@ export interface PaymentProvider {
 
   getPaymentMethods(customerId: string): Promise<unknown>;
   deletePaymentMethod(paymentMethodId: string): Promise<void>;
+
+  getReceipt(receiptId: string): Promise<unknown>;
 }
 
 export default PaymentProvider;

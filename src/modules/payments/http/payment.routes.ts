@@ -169,7 +169,19 @@ router.get('/refunds/:id', requireAdminLevel('full'), async (req: Request, res: 
   }
 });
 
-
-
+// Get receipt by ID
+router.get('/receipts/:receiptId', requireAdminLevel('full'), async (req: Request, res: Response) => {
+  try {
+    const receiptId = req.params.receiptId;
+    if (!receiptId) {
+      res.status(400).json({ error: 'Receipt ID is required' });
+      return;
+    }
+    const receipt = await paymentService.getReceipt(receiptId);
+    res.json(receipt);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;

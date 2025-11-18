@@ -944,6 +944,115 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         responses: { '200': { description: 'OK' }, '404': { description: 'Not found' } },
       },
     },
+    '/receipts/{receiptId}': {
+      get: {
+        tags: ['Payments'],
+        summary: 'Получить информацию о чеке',
+        description: 'Запрос позволяет получить информацию о текущем состоянии чека по его уникальному идентификатору из ЮKassa.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { 
+            name: 'receiptId', 
+            in: 'path', 
+            required: true, 
+            schema: { type: 'string' },
+            description: 'Уникальный идентификатор чека (например: rt-2da5c87d-0384-50e8-a7f3-8d5646dd9e10)',
+            example: 'rt-2da5c87d-0384-50e8-a7f3-8d5646dd9e10'
+          }
+        ],
+        responses: { 
+          '200': { 
+            description: 'Информация о чеке успешно получена',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', description: 'Идентификатор чека' },
+                    type: { type: 'string', enum: ['payment', 'refund'], description: 'Тип чека' },
+                    status: { type: 'string', enum: ['pending', 'succeeded', 'canceled'], description: 'Статус чека' },
+                    payment_id: { type: 'string', description: 'ID платежа' },
+                    fiscal_document_number: { type: 'string', description: 'Номер фискального документа' },
+                    fiscal_storage_number: { type: 'string', description: 'Номер фискального накопителя' },
+                    fiscal_attribute: { type: 'string', description: 'Фискальный признак документа' },
+                    registered_at: { type: 'string', format: 'date-time', description: 'Дата и время регистрации чека' },
+                    fiscal_provider_id: { type: 'string', description: 'ID фискального провайдера' },
+                    tax_system_code: { type: 'integer', enum: [1, 2, 3, 4, 5, 6], description: 'Код системы налогообложения' },
+                    items: { 
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          description: { type: 'string', description: 'Название товара' },
+                          quantity: { type: 'number', description: 'Количество' },
+                          amount: { 
+                            type: 'object',
+                            properties: {
+                              value: { type: 'string', description: 'Сумма' },
+                              currency: { type: 'string', description: 'Валюта' }
+                            }
+                          },
+                          vat_code: { type: 'integer', description: 'Ставка НДС' },
+                          payment_mode: { type: 'string', description: 'Признак способа расчёта' },
+                          payment_subject: { type: 'string', description: 'Признак предмета расчёта' }
+                        }
+                      }
+                    },
+                    settlements: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          type: { type: 'string', description: 'Тип оплаты' },
+                          amount: {
+                            type: 'object',
+                            properties: {
+                              value: { type: 'string' },
+                              currency: { type: 'string' }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                example: {
+                  id: 'rt-2da5c87d-0384-50e8-a7f3-8d5646dd9e10',
+                  type: 'payment',
+                  status: 'succeeded',
+                  payment_id: '225d8da0-000f-50be-b000-0003308c89be',
+                  fiscal_document_number: '3997',
+                  fiscal_storage_number: '9288000100115786',
+                  fiscal_attribute: '2617603922',
+                  registered_at: '2019-09-18T10:06:42.985Z',
+                  fiscal_provider_id: 'fd9e9404-eaca-4000-8ec9-dc228ead2346',
+                  items: [
+                    {
+                      quantity: 5.000,
+                      amount: { value: '1500.30', currency: 'RUB' },
+                      vat_code: 2,
+                      description: 'Capybara',
+                      payment_mode: 'full_payment',
+                      payment_subject: 'commodity'
+                    }
+                  ],
+                  tax_system_code: 1,
+                  settlements: [
+                    {
+                      type: 'cashless',
+                      amount: { value: '45.67', currency: 'RUB' }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          '400': { description: 'Некорректный ID чека' },
+          '404': { description: 'Чек не найден' },
+          '500': { description: 'Ошибка при получении данных из ЮKassa' }
+        },
+      },
+    },
   },
 };
 

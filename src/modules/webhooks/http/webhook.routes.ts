@@ -8,6 +8,7 @@ import { createPaymentProvider } from '@modules/payments/infrastructure/provider
 import { SmsService } from '@modules/sms/application/sms.service';
 import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.repository';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
+import { buildReceiptUrl } from '@shared/utils/receipt.utils';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -107,7 +108,30 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             };
             
-            const smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб. Ждём вас!`;
+            // Базовый текст SMS
+            let smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб.`;
+            
+            // Получаем ссылку на чек, если есть receipt_id
+            let receiptUrl: string | null = null;
+            if (paymentSuccess.receipt?.id) {
+              try {
+                const receipt = await paymentService.getReceipt(paymentSuccess.receipt.id);
+                if (receipt && receipt.status === 'succeeded') {
+                  receiptUrl = buildReceiptUrl(receipt);
+                  if (receiptUrl) {
+                    smsText += ` Чек: ${receiptUrl}`;
+                  }
+                }
+              } catch (receiptError: any) {
+                console.warn(`Failed to get receipt for payment ${paymentSuccess.id}:`, receiptError.message);
+                // Продолжаем отправку SMS без ссылки на чек
+              }
+            }
+            
+            // Если не получилось добавить чек, добавляем стандартное окончание
+            if (!receiptUrl) {
+              smsText += ' Ждём вас!';
+            }
             
             // Проверяем формат номера (должен быть 11 цифр без +)
             let phone = user.phone.replace(/\D/g, '');
@@ -121,10 +145,9 @@ router.post('/webhook', (async (req: Request, res: Response) => {
                   channel: 'digit',
                   text: smsText,
                   tag: 'booking_paid',
-									
                 }]
               });
-              console.log(`SMS sent to ${phone} for booking ${booking._id}`);
+              console.log(`SMS sent to ${phone} for booking ${booking._id}${receiptUrl ? ' with receipt link' : ''}`);
             } else {
               console.warn(`Invalid phone format for user ${user._id}: ${user.phone}`);
             }

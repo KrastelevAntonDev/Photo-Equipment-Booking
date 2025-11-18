@@ -8,6 +8,7 @@ import {
   Refund,
   ApiError,
   PaymentMethod,
+  ReceiptResponse,
 } from '@infrastructure/external/yookassa/yookassa.types';
 
 export class YooKassaHttpClient {
@@ -97,5 +98,10 @@ export class YooKassaHttpClient {
 
   async deletePaymentMethod(paymentMethodId: string): Promise<void> {
     await this.request<void>('DELETE', `/payment_methods/${paymentMethodId}`);
+  }
+
+  // Receipts
+  async getReceipt(receiptId: string): Promise<ReceiptResponse> {
+    return this.request<ReceiptResponse>('GET', `/receipts/${receiptId}`);
   }
 }

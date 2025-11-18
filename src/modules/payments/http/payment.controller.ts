@@ -43,4 +43,18 @@ export class PaymentController {
 			res.status(500).json({ message: errorMessage });
 		}
 	}
+
+	async getReceipt(req: Request, res: Response) {
+		try {
+			const receiptId = req.params.receiptId;
+			if (!receiptId) {
+				return res.status(400).json({ message: 'Receipt ID is required' });
+			}
+			const receipt = await this.paymentService.getReceipt(receiptId);
+			res.json(receipt);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			res.status(500).json({ message: errorMessage });
+		}
+	}
 }
