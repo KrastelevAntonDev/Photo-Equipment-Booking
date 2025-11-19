@@ -1,39 +1,195 @@
-import { RoomMongoRepository } from "@modules/rooms/infrastructure/room.mongo.repository";
-import { Room } from "@/modules/rooms/domain/room.entity";
-const rooms: Room[] = [
-	{
-		name: "АВАНГАРД",
-		address: "Москва, новоясеневский проспект, 1б, корп. 1",
-		area: 98,
-		pricePerHour: 2000,
-		colorScheme: ["темный"],
-		styles: ["avandard (modern)"],
-		description:
-			"АВАНГАРД -  пространство для смелых идей и выразительных кадров. Интерьер в стиле индустриального минимализма сочетает брутальные бетонные стены, глянцевые металлические поверхности и геометрические формы. Каждая зона продумана для воплощения креативных концепций, таких как портретные съёмки, fashion-сессии, рекламные и творческие  проекты.",
-		images: [],
-	},
-	{
-		name: "АФРОДИТА",
-		address: "Москва, новоясеневский проспект, 1б, корп. 1",
-		area: 99,
-		pricePerHour: 2000,
-		colorScheme: ["светлый"],
-		styles: ["romantic"],
-		description:
-			"СТУДИЯ АФРОДИТА - здесь рождаются нежные мечты, расцветают искренние улыбки, а взгляды влюблённых сияют, словно звёзды на небесах. Здесь можно устроить сказочную свадебную фотосессию, Love Story, стильную имиджевую съёмку. Особая гордость Афродиты — великолепные ангельские крылья, в которых вы почувствуете себя небесным созданием, спустившимся на землю.",
-		images: [],
-	},
-	{
-		name: "БИСТРО",
-		address: "Москва, новоясеневский проспект, 1б, корп. 1",
-		area: 0,
-		pricePerHour: 2000,
-		colorScheme: ["темный"],
-		styles: ["classic"],
-		description:
-			"БИСТРО - место, пропитанное духом парижской кухни в самом сердце французской столицы. С первых минут здесь ощущается особая магия. Фасад, увитый живыми цветами, словно приглашает заглянуть внутрь. Интерьер кафе идеально подходит для самых разных съемок. Здесь можно воплотить в жизнь fashion-истории, запечатлеть моменты love-story, создать или просто сделать стильные портреты. ",
-		images: [],
-	},
+import fs from 'fs';
+import path from 'path';
+import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
+import { Room } from '@modules/rooms/domain/room.entity';
+
+// CSV‑driven сидер комнат. Источник: new-info.csv в корне проекта.
+// Сохраняем ТОЛЬКО описания из старого сидера (descriptionMap).
+
+const descriptionMap: Record<string, string> = {
+	'АВАНГАРД': 'АВАНГАРД -  пространство для смелых идей и выразительных кадров. Интерьер в стиле индустриального минимализма сочетает брутальные бетонные стены, глянцевые металлические поверхности и геометрические формы. Каждая зона продумана для воплощения креативных концепций, таких как портретные съёмки, fashion-сессии, рекламные и творческие  проекты.',
+	'АФРОДИТА': 'СТУДИЯ АФРОДИТА - здесь рождаются нежные мечты, расцветают искренние улыбки, а взгляды влюблённых сияют, словно звёзды на небесах. Здесь можно устроить сказочную свадебную фотосессию, Love Story, стильную имиджевую съёмку. Особая гордость Афродиты — великолепные ангельские крылья.',
+	'БИСТРО': 'БИСТРО - место, пропитанное духом парижской кухни. Фасад, увитый живыми цветами, приглашает внутрь. Интерьер подходит для fashion, love-story и портретов.',
+	'2 ЛИКА': '2 ЛИКА — пространство фактур и деталей. Многообразие камней создаёт собственную историю. Можно попробовать себя в любом амплуа.',
+	'КРИПТОН': 'Студия КРИПТОН — символ силы, креатива и прогресса. Игра света и характера для имиджевой и fashion-съёмки.',
+	'ЛОФТ РУМ': 'LOFT ROOM — сочетание спальни и индустриального лофта. Подходит для динамичных кадров, модных образов и коммерческой съёмки.',
+	'МАНУФАКТУРА': 'Студия МАНУФАКТУРА — брутальный индастриал: решётка, металл, мотоцикл Harley-Davidson как арт-объект.',
+	'МУЛЕН РУЖ': 'МУЛЕН РУЖ — роскошь, страсть и театральный блеск. Бархат, огни LOVE, зеркала — для love story и fashion.',
+	'ОАЗИС': 'ОАЗИС — восточная сказка: тёплые оттенки, этнический декор, мягкий свет. Для имиджевых, fashion и портретных съёмок.',
+	'ОСТЕРИЯ': 'ОСТЕРИЯ — итальянская dolce vita: уют, гастро-атмосфера и стиль для романтических и семейных историй.',
+	'ПОДКАСТНАЯ': 'ПОДКАСТНАЯ — изолированная студия для записи аудио/видео, YouTube, Reels, TikTok.',
+	'ПЬЕР': 'ПЬЕР — классика + современные акценты: молдинги, камин, белоснежные стены. Fashion, семейные и портретные съёмки.',
+	'РАЙ': 'РАЙ — утончённые мечты, воздушность и свет, нежные оттенки. Fashion, портреты, девичники.',
+	'САТУРН': 'САТУРН — масштаб и креативная «гравитация». Для fashion, beauty и глянца.',
+	'АМСТЕРДАМ': 'АМСТЕРДАМ — яркий смелый интерьер, путешествие по улочкам города.',
+	'ЛОНДОН': 'ЛОНДОН — кирпич, строгие линии, глубокие оттенки. Атмосфера Сохо / Ноттинг-Хилл.',
+	'МАРАКЕШ': 'МАРРАКЕШ — восточная магия, романтика и тепло улиц с ароматами специй.',
+	'САНТОРИНИ': 'САНТОРИНИ — свет, вдохновение, контраст белой архитектуры и бугенвиллий.',
+	'СИЦИЛИЯ': 'СИЦИЛИЯ — изящество итальянской мечты: винтаж, кирпич, фонари.',
+	'БРУКЛИН': 'АРТ-СТУДИЯ БРУКЛИН — урбанистическая энергия, граффити, смелые акценты.',
+	'ХРОМ': 'Студия ХРОМ — металл, холодный блеск, футуристические отражения.',
+	'ЗАЛ ЧАЙКОВСКИЙ': 'ЗАЛ ЧАЙКОВСКИЙ — купол света, масштаб и изящество для крупных съёмок.',
+	'НИАГАРА': 'НИАГАРА — динамика и глубина пространства для концептуальных съёмок.',
+	'ДИОД': 'ДИОД — специализированная студия для технически точного света.',
+	'ШАНХАЙ': 'ШАНХАЙ — арт‑пространство с атмосферой современного мегаполиса.',
+	'КИОТО': 'КИОТО — спокойствие, лаконичность и восточная эстетика.',
+};
+
+function parseCsv(filePath: string): string[][] {
+	const raw = fs.readFileSync(filePath, 'utf8');
+	const lines = raw.split(/\r?\n/).filter(l => l.trim().length);
+	return lines.map(line => {
+	const cells: string[] = [];
+	let current = '';
+	let inQuotes = false;
+		for (let i = 0; i < line.length; i++) {
+			const ch = line[i];
+			if (ch === '"') {
+				inQuotes = !inQuotes;
+				continue;
+			}
+			if (ch === ',' && !inQuotes) {
+				cells.push(current.trim());
+				current = '';
+			} else {
+				current += ch;
+			}
+		}
+		cells.push(current.trim());
+		return cells.map(c => c.replace(/^"|"$/g, '').trim());
+	});
+}
+
+function parseIntSafe(v: string): number {
+	if (!v || v === '—') return 0;
+	const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
+	return isNaN(n) ? 0 : n;
+}
+
+function parseMinBooking(v: string): number | undefined {
+	if (!v) return undefined;
+	const m = v.match(/(\d+)/);
+	return m ? parseInt(m[1], 10) : undefined;
+}
+
+export async function seedRooms() {
+	const csvPath = path.resolve(process.cwd(), 'new-info.csv');
+	if (!fs.existsSync(csvPath)) {
+		console.warn('[rooms.seed] new-info.csv не найден');
+		return;
+	}
+	const [, ...rows] = parseCsv(csvPath); // header не используется
+	const repo = new RoomMongoRepository();
+	const now = new Date();
+
+	for (const row of rows) {
+		if (row.length < 12) continue; // пропуск неполных строк
+		const [category, name, areaRaw, minBookingRaw, price00_12Raw, price12_24Raw, priceWeekendRaw, ceilingRaw, lightRaw, cycWallRaw, isolationRaw] = row;
+
+		const area = parseIntSafe(areaRaw);
+		const weekday_00_12 = parseIntSafe(price00_12Raw);
+		const weekday_12_24 = parseIntSafe(price12_24Raw);
+		const weekend_holiday_00_24 = parseIntSafe(priceWeekendRaw);
+		const minBookingHours = parseMinBooking(minBookingRaw);
+		const cycWall = !!(cycWallRaw && cycWallRaw !== '—');
+		const sharedSpace = category === 'Общая зона';
+		const ceilingHeightMeters = parseIntSafe(ceilingRaw); // если число, иначе 0
+		const features: string[] = [];
+		if (lightRaw && lightRaw !== '—') features.push(lightRaw);
+		if (isolationRaw && isolationRaw !== '—') features.push('Изоляция: ' + isolationRaw);
+		if (cycWall) features.push('Циклорама: ' + cycWallRaw);
+
+		const pricing: Room['pricing'] = {
+			weekday_00_12,
+			weekday_12_24,
+			weekend_holiday_00_24,
+		};
+
+		// pricePerHour берём как дневную ставку (weekday_12_24) если есть, иначе weekend.
+		const pricePerHour = weekday_12_24 || weekend_holiday_00_24 || weekday_00_12;
+
+		const description = descriptionMap[name] || '';
+
+		const room: Room = {
+			name,
+			address: 'Москва, новоясеневский проспект, 1б, корп. 1',
+			area,
+			pricePerHour,
+			category,
+			minBookingHours,
+			ceilingHeightMeters: ceilingHeightMeters || undefined,
+			cycWall,
+			sharedSpace,
+			features: features.length ? features : undefined,
+			pricing,
+			colorScheme: [],
+			styles: [],
+			description,
+			images: [],
+			createdAt: now,
+			updatedAt: now,
+		};
+
+		try {
+			const existing = await repo.findByName(room.name);
+			if (existing) {
+				await repo.updateRoom(existing._id!.toString(), room);
+				console.log(`[rooms.seed] Updated: ${room.name}`);
+			} else {
+				await repo.createRoom(room);
+				console.log(`[rooms.seed] Created: ${room.name}`);
+			}
+		} catch (e: any) {
+			console.error(`[rooms.seed] Error ${room.name}:`, e.message);
+		}
+	}
+	console.log('[rooms.seed] Завершено');
+}
+
+/* LEGACY BLOCK COMMENTED OUT
+import fs from 'fs';
+import path from 'path';
+import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
+import { Room } from '@modules/rooms/domain/room.entity';
+
+// Новый сидер комнат на основе CSV new-info.csv.
+// Сохраняем ТОЛЬКО описания из старых данных (descriptionMap).
+
+const descriptionMap: Record<string, string> = {
+	'АВАНГАРД': 'АВАНГАРД -  пространство для смелых идей и выразительных кадров. Интерьер в стиле индустриального минимализма сочетает брутальные бетонные стены, глянцевые металлические поверхности и геометрические формы. Каждая зона продумана для воплощения креативных концепций, таких как портретные съёмки, fashion-сессии, рекламные и творческие  проекты.',
+	'АФРОДИТА': 'СТУДИЯ АФРОДИТА - здесь рождаются нежные мечты, расцветают искренние улыбки, а взгляды влюблённых сияют, словно звёзды на небесах. Здесь можно устроить сказочную свадебную фотосессию, Love Story, стильную имиджевую съёмку. Особая гордость Афродиты — великолепные ангельские крылья.',
+	'БИСТРО': 'БИСТРО - место, пропитанное духом парижской кухни. Фасад, увитый живыми цветами, приглашает внутрь. Интерьер подходит для fashion, love-story и портретов.',
+	'2 ЛИКА': '2 ЛИКА — пространство фактур и деталей. Многообразие камней создаёт собственную историю. Можно попробовать себя в любом амплуа.',
+	'КРИПТОН': 'Студия КРИПТОН — символ силы, креатива и прогресса. Игра света и характера для имиджевой и fashion-съёмки.',
+	'ЛОФТ РУМ': 'LOFT ROOM — сочетание спальни и индустриального лофта. Подходит для динамичных кадров, модных образов и коммерческой съёмки.',
+	'МАНУФАКТУРА': 'Студия МАНУФАКТУРА — брутальный индастриал: решётка, металл, мотоцикл Harley-Davidson как арт-объект.',
+	'МУЛЕН РУЖ': 'МУЛЕН РУЖ — роскошь, страсть и театральный блеск. Бархат, огни LOVE, зеркала — для love story и fashion.',
+	'ОАЗИС': 'ОАЗИС — восточная сказка: тёплые оттенки, этнический декор, мягкий свет. Для имиджевых, fashion и портретных съёмок.',
+	'ОСТЕРИЯ': 'ОСТЕРИЯ — итальянская dolce vita: уют, гастро-атмосфера и стиль для романтических и семейных историй.',
+	'ПОДКАСТНАЯ': 'ПОДКАСТНАЯ — изолированная студия для записи аудио/видео, YouTube, Reels, TikTok.',
+	'ПЬЕР': 'ПЬЕР — классика + современные акценты: молдинги, камин, белоснежные стены. Fashion, семейные и портретные съёмки.',
+	'РАЙ': 'РАЙ — утончённые мечты, воздушность и свет, нежные оттенки. Fashion, портреты, девичники.',
+	'САТУРН': 'САТУРН — масштаб и креативная «гравитация». Для fashion, beauty и глянца.',
+	'АМСТЕРДАМ': 'АМСТЕРДАМ — яркий смелый интерьер, путешествие по улочкам города.',
+	'ЛОНДОН': 'ЛОНДОН — кирпич, строгие линии, глубокие оттенки. Атмосфера Сохо / Ноттинг-Хилл.',
+	'МАРАКЕШ': 'МАРРАКЕШ — восточная магия, романтика и тепло улиц с ароматами специй.',
+	'МАРРАКЕШ': 'МАРРАКЕШ — восточная магия, романтика и тепло улиц с ароматами специй.',
+	'САНТОРИНИ': 'САНТОРИНИ — свет, вдохновение, контраст белой архитектуры и бугенвиллий.',
+	'СИЦИЛИЯ': 'СИЦИЛИЯ — изящество итальянской мечты: винтаж, кирпич, фонари.',
+			const existing = await repo.findByName(room.name);
+			if (existing) {
+				await repo.updateRoom(existing._id!.toString(), room);
+				console.log(`[rooms.seed] Updated: ${room.name}`);
+			} else {
+				await repo.createRoom(room);
+				console.log(`[rooms.seed] Created: ${room.name}`);
+			}
+		} catch (e: any) {
+			console.error(`[rooms.seed] Error ${room.name}:`, e.message);
+		}
+	}
+	console.log('[rooms.seed] Завершено');
+}
 	{
 		name: "2 ЛИКА",
 		address: "Москва, новоясеневский проспект, 1б, корп. 1",
@@ -293,3 +449,4 @@ export async function seedRooms() {
 		}
 	}
 }
+*/
