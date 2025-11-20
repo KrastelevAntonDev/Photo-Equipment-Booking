@@ -8,4 +8,8 @@ export class AdminCreateUserDTO {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @IsString()
+  @IsOptional()
+  fullName?: string;
 }

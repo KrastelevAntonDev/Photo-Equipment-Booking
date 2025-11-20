@@ -72,8 +72,8 @@ export class UserController {
 
   async adminCreateUser(req: Request, res: Response) {
     try {
-      const { email, phone } = req.body as AdminCreateUserDTO;
-      const created = await this.userService.createUserByAdmin({ email, phone });
+      const { email, phone, fullName } = req.body as AdminCreateUserDTO;
+      const created = await this.userService.createUserByAdmin({ email, phone, fullName });
       res.status(201).json(created);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

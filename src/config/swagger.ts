@@ -129,6 +129,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         required: ['email'],
         properties: {
           email: { type: 'string', format: 'email' },
+          fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
       AdminCreateUserDTO: {
@@ -137,6 +138,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         properties: {
           email: { type: 'string', format: 'email' },
           phone: { type: 'string' },
+          fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
       PaymentCreateRequest: {

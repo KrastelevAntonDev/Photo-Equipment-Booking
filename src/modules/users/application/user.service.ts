@@ -23,7 +23,7 @@ export class UserService {
   }
 
   // Создание пользователя через админку с минимальными полями
-  async createUserByAdmin(payload: { email: string; phone?: string }): Promise<User> {
+  async createUserByAdmin(payload: { email: string; phone?: string; fullName?: string }): Promise<User> {
     const existing = await this.userRepository.findByEmail(payload.email);
     if (existing) {
       throw new Error('User with this email already exists');
@@ -34,6 +34,7 @@ export class UserService {
       email: payload.email,
       passwordHash: '',
       phone: payload.phone,
+      fullName: payload.fullName,
       favoriteRoomIds: [],
       balance: 0,
       points: 0,
