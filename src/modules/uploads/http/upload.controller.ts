@@ -34,7 +34,6 @@ export class UploadController {
 
   async uploadImage(req: Request, res: Response, next: NextFunction) {
     try {
-      // Читаем тип и id из query, чтобы они были доступны до парсинга multipart
       const type = String(req.query.type || '').toLowerCase() as UploadType;
       const id = String(req.query.id || '');
 
@@ -45,7 +44,6 @@ export class UploadController {
         return res.status(400).json({ message: 'Missing id' });
       }
 
-      // Находим документ и вычисляем папку сохранения по имени сущности
       let baseDir: string;
       let urlBase: string;
       let entityName: string | null = null;
@@ -64,7 +62,6 @@ export class UploadController {
         urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
       }
 
-      // Кладём целевую директорию в req для storage.destination
       (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
 
       const upload = this.makeMulterStorage().single('image');
@@ -77,13 +74,11 @@ export class UploadController {
 
         try {
           if (type === 'room') {
-            // Добавляем ссылку в массив images (если он есть)
             const current = await this.roomRepo.findById(id);
             if (!current) return res.status(404).json({ message: 'Room not found' });
             const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
             await this.roomRepo.updateRoom(id, { images: nextImages });
           } else {
-            // Для оборудования пишем в поле image (одно изображение)
             await this.eqRepo.updateEquipment(id, { image: publicUrl });
           }
         } catch (e: any) {
@@ -100,6 +95,150 @@ export class UploadController {
             filename: req.file.filename
           }
         });
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async uploadMultipleImages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const type = String(req.query.type || '').toLowerCase() as UploadType;
+      const id = String(req.query.id || '');
+
+      if (!type || !['room', 'equipment'].includes(type)) {
+        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment' });
+      }
+      if (!id) {
+        return res.status(400).json({ message: 'Missing id' });
+      }
+
+      let baseDir: string;
+      let urlBase: string;
+      let entityName: string | null = null;
+
+      if (type === 'room') {
+        const room = await this.roomRepo.findById(id);
+        if (!room) return res.status(404).json({ message: 'Room not found' });
+        entityName = room.name;
+        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms', entityName);
+        urlBase = ['/public', 'uploads', 'rooms', encodeURIComponent(entityName)].join('/');
+      } else {
+        const eq = await this.eqRepo.findById(id);
+        if (!eq) return res.status(404).json({ message: 'Equipment not found' });
+        entityName = eq.name;
+        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'equipment', entityName);
+        urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
+      }
+
+      (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
+
+      const upload = this.makeMulterStorage().array('images', 20); // max 20 files
+      upload(req, res, async (err: any) => {
+        if (err) return next(err);
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+          return res.status(400).json({ message: 'Файлы не получены. Поле: images' });
+        }
+
+        const target = (req as any)._uploadTarget as { baseDir: string; urlBase: string };
+        const uploadedUrls: string[] = [];
+
+        for (const file of req.files) {
+          const publicUrl = `${target.urlBase}/${encodeURIComponent(file.filename)}`;
+          uploadedUrls.push(publicUrl);
+        }
+
+        try {
+          if (type === 'room') {
+            const current = await this.roomRepo.findById(id);
+            if (!current) return res.status(404).json({ message: 'Room not found' });
+            const nextImages = Array.from(new Set([...(current.images || []), ...uploadedUrls]));
+            await this.roomRepo.updateRoom(id, { images: nextImages });
+          } else {
+            // Для equipment берём первую картинку
+            await this.eqRepo.updateEquipment(id, { image: uploadedUrls[0] });
+          }
+        } catch (e: any) {
+          return next(e);
+        }
+
+        return res.status(201).json({
+          message: `Загружено файлов: ${uploadedUrls.length}`,
+          urls: uploadedUrls,
+          files: req.files.map((f: any) => ({
+            originalName: f.originalname,
+            size: f.size,
+            mimeType: f.mimetype,
+            filename: f.filename
+          }))
+        });
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async deleteImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const type = String(req.query.type || '').toLowerCase() as UploadType;
+      const id = String(req.query.id || '');
+      const imageUrl = String(req.body.url || '');
+
+      if (!type || !['room', 'equipment'].includes(type)) {
+        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment' });
+      }
+      if (!id) {
+        return res.status(400).json({ message: 'Missing id' });
+      }
+      if (!imageUrl) {
+        return res.status(400).json({ message: 'Missing url in body' });
+      }
+
+      // Извлекаем путь к файлу из URL
+      // Формат: /public/uploads/rooms/NAME/filename.jpg
+      const urlMatch = imageUrl.match(/\/public\/uploads\/(rooms|equipment)\/([^/]+)\/(.+)$/);
+      if (!urlMatch) {
+        return res.status(400).json({ message: 'Invalid image URL format' });
+      }
+
+      const [, urlType, entityNameEncoded, filename] = urlMatch;
+      const entityName = decodeURIComponent(entityNameEncoded);
+      const decodedFilename = decodeURIComponent(filename);
+
+      // Проверяем соответствие типа
+      if (urlType !== (type === 'room' ? 'rooms' : 'equipment')) {
+        return res.status(400).json({ message: 'URL type mismatch' });
+      }
+
+      const filePath = path.join(__dirname, '..', '..', '..', 'public', 'uploads', urlType, entityName, decodedFilename);
+
+      // Удаляем файл с диска
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      // Удаляем URL из базы
+      try {
+        if (type === 'room') {
+          const current = await this.roomRepo.findById(id);
+          if (!current) return res.status(404).json({ message: 'Room not found' });
+          const nextImages = (current.images || []).filter(url => url !== imageUrl);
+          await this.roomRepo.updateRoom(id, { images: nextImages });
+        } else {
+          const current = await this.eqRepo.findById(id);
+          if (!current) return res.status(404).json({ message: 'Equipment not found' });
+          // Для equipment если это текущая картинка — очищаем
+          if (current.image === imageUrl) {
+            await this.eqRepo.updateEquipment(id, { image: '' });
+          }
+        }
+      } catch (e: any) {
+        return next(e);
+      }
+
+      return res.status(200).json({
+        message: 'Изображение удалено',
+        url: imageUrl
       });
     } catch (e) {
       next(e);

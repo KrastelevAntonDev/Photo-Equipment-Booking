@@ -289,7 +289,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     '/upload/image': {
       post: {
         tags: ['Uploads'],
-        summary: 'Загрузка изображения для комнаты или оборудования',
+        summary: 'Загрузка одного изображения для комнаты или оборудования',
         description: 'Принимает multipart/form-data с полем image. Параметры: type=room|equipment, id=<ObjectId>. Сохраняет файл в соответствующую папку и возвращает публичный URL. Требует Bearer JWT и права администратора.',
         security: [{ BearerAuth: [] }],
         parameters: [
@@ -333,6 +333,102 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             }
           },
           '400': { description: 'Неверные параметры или файл не получен' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Сущность не найдена' }
+        }
+      },
+      delete: {
+        tags: ['Uploads'],
+        summary: 'Удаление изображения',
+        description: 'Удаляет изображение с диска и из базы данных. Требует Bearer JWT и права администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'type', required: true, schema: { type: 'string', enum: ['room', 'equipment'] }, description: 'Тип сущности' },
+          { in: 'query', name: 'id', required: true, schema: { type: 'string' }, description: 'ID сущности (ObjectId)' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { url: { type: 'string', description: 'Публичный URL изображения для удаления' } },
+                required: ['url']
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Изображение успешно удалено',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string' },
+                    url: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Неверные параметры или неверный формат URL' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Сущность не найдена' }
+        }
+      }
+    },
+    '/upload/images': {
+      post: {
+        tags: ['Uploads'],
+        summary: 'Загрузка нескольких изображений',
+        description: 'Принимает multipart/form-data с полем images (массив файлов). Максимум 20 файлов. Параметры: type=room|equipment, id=<ObjectId>. Требует Bearer JWT и права администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'type', required: true, schema: { type: 'string', enum: ['room', 'equipment'] }, description: 'Тип сущности' },
+          { in: 'query', name: 'id', required: true, schema: { type: 'string' }, description: 'ID сущности (ObjectId)' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: { images: { type: 'array', items: { type: 'string', format: 'binary' } } },
+                required: ['images']
+              }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Файлы успешно загружены',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string' },
+                    urls: { type: 'array', items: { type: 'string' } },
+                    files: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          originalName: { type: 'string' },
+                          size: { type: 'number' },
+                          mimeType: { type: 'string' },
+                          filename: { type: 'string' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Неверные параметры или файлы не получены' },
           '401': { description: 'Unauthorized' },
           '404': { description: 'Сущность не найдена' }
         }
