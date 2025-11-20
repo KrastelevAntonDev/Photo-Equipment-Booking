@@ -95,6 +95,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           totalPrice: { type: 'number' },
           paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
           isPaid: { type: 'boolean' },
+          isHalfPaid: { type: 'boolean', description: 'Признак половинной оплаты (45%-55% от total)' },
         },
       },
       AdminCreateBookingDTO: {

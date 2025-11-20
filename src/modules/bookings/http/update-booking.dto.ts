@@ -34,4 +34,8 @@ export class UpdateBookingDTO {
   @IsOptional()
   @IsBoolean()
   isPaid?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isHalfPaid?: boolean;
 }

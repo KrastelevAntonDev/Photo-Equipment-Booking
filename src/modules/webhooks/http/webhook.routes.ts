@@ -89,8 +89,18 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         // Сохраняем платёж
         await paymentService.createPayment(paymentData);
         // Регистрируем оплату в брони (накопительным итогом)
-        if (paymentSuccess.paid === true) {
-          await bookingService.registerPayment(paymentSuccess.metadata.bookingId, Number(paymentSuccess.amount.value));
+        // Регистрируем оплату независимо от флага paid (некоторые методы могут задерживать его выставление)
+        try {
+          const bookingAfterPay = await bookingService.registerPayment(paymentSuccess.metadata.bookingId, Number(paymentSuccess.amount.value));
+          console.log('[webhook] booking payment registered:', {
+            bookingId: paymentSuccess.metadata.bookingId,
+            paidAmount: bookingAfterPay?.paidAmount,
+            paymentStatus: bookingAfterPay?.paymentStatus,
+            isPaid: bookingAfterPay?.isPaid,
+            status: bookingAfterPay?.status,
+          });
+        } catch (regErr: any) {
+          console.error('[webhook] failed to register payment in booking:', regErr.message);
         }
         
         // Отправка SMS уведомления пользователю

@@ -300,17 +300,26 @@ export class BookingService {
 			if (!booking) return null;
 			const currentPaid = booking.paidAmount ?? 0;
 			const total = booking.totalPrice ?? 0;
-			const newPaid = Math.max(0, currentPaid + amount);
-			const fullyPaid = newPaid + 1e-6 >= total; // небольшая погрешность для округления
-			const paymentStatus = fullyPaid ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
+			if (total <= 0) return booking; // некорректная сумма брони
+			// Защита от повторных вебхуков: не превышаем total
+			const targetPaid = Math.min(total, Math.max(0, currentPaid + amount));
+			const fullyPaid = targetPaid + 1e-6 >= total; // погрешность
+			const paymentStatus = fullyPaid ? 'paid' : targetPaid > 0 ? 'partial' : 'unpaid';
+			// Определяем половинную оплату: считаем половинной если оплачено 45%-55% от общей суммы
+			const halfThreshold = total * 0.5;
+			const isHalfPaid = !fullyPaid && targetPaid >= halfThreshold * 0.9 && targetPaid <= halfThreshold * 1.1;
+			// Если повторный вебхук не изменяет сумму — просто возвращаем текущее состояние
+			if (targetPaid === currentPaid && booking.paymentStatus === paymentStatus && booking.isPaid === fullyPaid && booking.isHalfPaid === isHalfPaid) {
+				return booking;
+			}
 			const updated = await this.bookingRepository.updatePartial(bookingId, {
-				paidAmount: Math.round(newPaid * 100) / 100,
+				paidAmount: Math.round(targetPaid * 100) / 100,
 				paymentStatus,
 				isPaid: fullyPaid,
+				isHalfPaid,
 			});
 			if (updated && fullyPaid && updated.status === 'pending') {
 				await this.updateBookingStatus(bookingId, 'confirmed');
-				// Перечитаем для консистентности
 				return this.bookingRepository.findById(bookingId);
 			}
 			return updated;

@@ -15,6 +15,7 @@ export interface Booking {
   isPaid?: boolean;                               // признак полной оплаты
   paidAmount?: number;                            // сколько оплачено суммарно
   paymentStatus?: 'unpaid' | 'partial' | 'paid';  // состояние оплаты
+  isHalfPaid?: boolean;                           // признак половинной оплаты (около 50%)
   createdAt: Date;
   updatedAt: Date;
   isDeleted?: boolean;

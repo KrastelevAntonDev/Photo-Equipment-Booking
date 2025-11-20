@@ -85,7 +85,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 	async updatePaymentInfo(
 		id: string,
-		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid' }
+		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid'; isHalfPaid?: boolean }
 	): Promise<Booking | null> {
 		if (!ObjectId.isValid(id)) {
 			return null;
@@ -96,6 +96,7 @@ export class BookingMongoRepository implements IBookingRepository {
 			...('isPaid' in payload ? { isPaid: payload.isPaid } : {}),
 			...('paidAmount' in payload ? { paidAmount: payload.paidAmount } : {}),
 			...('paymentStatus' in payload ? { paymentStatus: payload.paymentStatus } : {}),
+			...('isHalfPaid' in payload ? { isHalfPaid: payload.isHalfPaid } : {}),
 			updatedAt: new Date(),
 		};
 		return this.getCollection().findOneAndUpdate(
@@ -107,7 +108,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		async updatePartial(
 			id: string,
-			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus'>>
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
 		): Promise<Booking | null> {
 			if (!ObjectId.isValid(id)) {
 				return null;
@@ -124,6 +125,7 @@ export class BookingMongoRepository implements IBookingRepository {
 			if (typeof update.isPaid !== 'undefined') set.isPaid = update.isPaid;
 			if (typeof update.paidAmount !== 'undefined') set.paidAmount = update.paidAmount;
 			if (typeof update.paymentStatus !== 'undefined') set.paymentStatus = update.paymentStatus;
+			if (typeof update.isHalfPaid !== 'undefined') set.isHalfPaid = update.isHalfPaid;
 			if (update.paymentMethod) set.paymentMethod = update.paymentMethod;
 
 			return this.getCollection().findOneAndUpdate(
