@@ -14,10 +14,10 @@ router.get('/bookings', authMiddleware, (req, res) => bookingController.getAllBo
 router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
 	bookingController.createBooking(req, res)
 });
-router.get('/bookings/room/:id', adminMiddleware, (req, res) => {
+router.get('/get-booking-info-by-room/:id', authMiddleware, (req, res) => {
 	bookingController.getBookingByIdRoom(req, res);
 });
-router.get('/bookings/booking/:id', adminMiddleware, (req, res) => {
+router.get('/get-booking-info/:id', authMiddleware, (req, res) => {
 	bookingController.getBookingById(req, res);
 });
 
