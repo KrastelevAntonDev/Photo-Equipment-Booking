@@ -16,6 +16,7 @@ export interface Booking {
   paidAmount?: number;                            // сколько оплачено суммарно
   paymentStatus?: 'unpaid' | 'partial' | 'paid';  // состояние оплаты
   isHalfPaid?: boolean;                           // признак половинной оплаты (около 50%)
+  user?: UserJwtPayload;                          // данные пользователя (для отображения без джоина)
   createdAt: Date;
   updatedAt: Date;
   isDeleted?: boolean;

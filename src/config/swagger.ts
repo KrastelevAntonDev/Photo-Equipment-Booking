@@ -74,6 +74,39 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
+      Booking: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          userId: { type: 'string' },
+          roomId: { type: 'string' },
+          equipmentIds: { type: 'array', items: { type: 'string' } },
+          start: { type: 'string', format: 'date-time' },
+          end: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
+          totalPrice: { type: 'number' },
+          paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
+          isPaid: { type: 'boolean' },
+          paidAmount: { type: 'number' },
+          paymentStatus: { type: 'string', enum: ['unpaid', 'partial', 'paid'] },
+          isHalfPaid: { type: 'boolean', description: 'Признак половинной оплаты (45%-55% от total)' },
+          user: {
+            type: 'object',
+            description: 'Данные пользователя (для отображения без джоина)',
+            properties: {
+              userId: { type: 'string' },
+              email: { type: 'string' },
+              phone: { type: 'string' },
+              fullName: { type: 'string' },
+              iat: { type: 'number' },
+              exp: { type: 'number' },
+            }
+          },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          isDeleted: { type: 'boolean' },
+        },
+      },
       CreateBookingDTO: {
         type: 'object',
         required: ['roomId', 'start', 'end'],
@@ -967,7 +1000,13 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           required: true,
           content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBookingDTO' } } },
         },
-        responses: { '201': { description: 'Created' }, '400': { description: 'Ошибка валидации/пересечение' } },
+        responses: {
+          '201': {
+            description: 'Created',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Booking' } } },
+          },
+          '400': { description: 'Ошибка валидации/пересечение' }
+        },
       },
     },
     '/bookings/{id}': {
@@ -1004,7 +1043,10 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           },
         },
         responses: {
-          '201': { description: 'Created' },
+          '201': {
+            description: 'Created',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Booking' } } },
+          },
           '400': { description: 'Ошибка валидации/пересечение/не найдены сущности' },
           '403': { description: 'Недостаточно прав' },
         },

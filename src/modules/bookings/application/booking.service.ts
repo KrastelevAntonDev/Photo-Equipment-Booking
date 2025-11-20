@@ -178,9 +178,17 @@ export class BookingService {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			paymentMethod: payload.paymentMethod,
-				isPaid: false,
-				paidAmount: 0,
-				paymentStatus: 'unpaid',
+			isPaid: false,
+			paidAmount: 0,
+			paymentStatus: 'unpaid',
+			user: {
+				userId: user._id!.toString(),
+				email: user.email,
+				phone: user.phone || '',
+				fullName: user.fullName || user.email,
+				iat: Math.floor(Date.now() / 1000),
+				exp: Math.floor(Date.now() / 1000) + 86400, // +24 часа
+			},
 		};
 
 		const newBooking = await this.bookingRepository.createBooking(newBody);
