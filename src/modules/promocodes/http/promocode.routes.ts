@@ -8,20 +8,27 @@ import { adminMiddleware } from '../../../shared/middlewares/admin.middleware';
 
 const router = Router();
 
-// Инициализируем зависимости
-const db = getDB();
-const promocodeRepository = new PromocodeMongoRepository(db);
-const promocodeService = new PromocodeService(promocodeRepository);
-const promocodeController = new PromocodeController(promocodeService);
+// Ленивая инициализация сервисов
+let promocodeController: PromocodeController | null = null;
+
+const getPromocodeController = () => {
+  if (!promocodeController) {
+    const db = getDB();
+    const promocodeRepository = new PromocodeMongoRepository(db);
+    const promocodeService = new PromocodeService(promocodeRepository);
+    promocodeController = new PromocodeController(promocodeService);
+  }
+  return promocodeController;
+};
 
 // Проверка валидности промокода - доступна авторизованным пользователям
-router.post('/promocodes/validate', authMiddleware, promocodeController.validate.bind(promocodeController));
+router.post('/promocodes/validate', authMiddleware, (req, res) => getPromocodeController().validate(req, res));
 
 // CRUD операции - только для админов
-router.post('/promocodes',  adminMiddleware, promocodeController.create.bind(promocodeController));
-router.get('/promocodes',  adminMiddleware, promocodeController.getAll.bind(promocodeController));
-router.get('/promocodes/:id',  adminMiddleware, promocodeController.getById.bind(promocodeController));
-router.put('/promocodes/:id',  adminMiddleware, promocodeController.update.bind(promocodeController));
-router.delete('/promocodes/:id',  adminMiddleware, promocodeController.delete.bind(promocodeController));
+router.post('/promocodes', adminMiddleware, (req, res) => getPromocodeController().create(req, res));
+router.get('/promocodes', adminMiddleware, (req, res) => getPromocodeController().getAll(req, res));
+router.get('/promocodes/:id', adminMiddleware, (req, res) => getPromocodeController().getById(req, res));
+router.put('/promocodes/:id', adminMiddleware, (req, res) => getPromocodeController().update(req, res));
+router.delete('/promocodes/:id', adminMiddleware, (req, res) => getPromocodeController().delete(req, res));
 
 export default router;

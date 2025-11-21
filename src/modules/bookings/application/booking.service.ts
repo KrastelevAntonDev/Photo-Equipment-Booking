@@ -17,12 +17,22 @@ export class BookingService {
 	private equipmentRepository: IEquipmentRepository;
 	private promocodeService?: PromocodeService;
 
-	constructor(promocodeService?: PromocodeService) {
+	constructor() {
 		this.bookingRepository = new BookingMongoRepository();
 		this.userRepository = new UserMongoRepository();
 		this.roomRepository = new RoomMongoRepository();
 		this.equipmentRepository = new EquipmentMongoRepository();
-		this.promocodeService = promocodeService;
+	}
+
+	private getPromocodeService(): PromocodeService {
+		if (!this.promocodeService) {
+			const { getDB } = require('@/config/database');
+			const { PromocodeMongoRepository } = require('@modules/promocodes/infrastructure/promocode.mongo.repository');
+			const db = getDB();
+			const promocodeRepository = new PromocodeMongoRepository(db);
+			this.promocodeService = new PromocodeService(promocodeRepository);
+		}
+		return this.promocodeService;
 	}
 
 	async getAllBookings(): Promise<Booking[]> {
@@ -87,8 +97,9 @@ export class BookingService {
 		let promocodeData: string | undefined;
 		let promocodeId: ObjectId | undefined;
 
-		if (booking.promocode && this.promocodeService) {
-			const promoResult = await this.promocodeService.applyPromocode(
+		if (booking.promocode) {
+			const promocodeService = this.getPromocodeService();
+			const promoResult = await promocodeService.applyPromocode(
 				booking.promocode,
 				computedTotal
 			);
