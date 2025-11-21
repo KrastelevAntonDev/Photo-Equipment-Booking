@@ -3,11 +3,11 @@ import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, IsDateString, Mi
 export class CreatePromocodeDTO {
   @IsString()
   @IsNotEmpty()
-  code: string;
+  code: string = '';
 
   @IsNumber()
   @Min(0)
-  discountAmount: number;
+  discountAmount: number = 0;
 
   @IsBoolean()
   @IsOptional()
