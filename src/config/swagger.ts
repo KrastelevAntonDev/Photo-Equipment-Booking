@@ -237,6 +237,16 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           paymentOption: { type: 'string', enum: ['full', 'half'], description: 'Размер оплаты при онлайн-платеже: 100% или 50%' },
         },
       },
+      AdminCreatePaymentDTO: {
+        type: 'object',
+        required: ['bookingId', 'discountAmount'],
+        properties: {
+          bookingId: { type: 'string', description: 'ID бронирования' },
+          discountAmount: { type: 'number', minimum: 0, description: 'Размер скидки в рублях' },
+          discountReason: { type: 'string', description: 'Причина предоставления скидки' },
+          return_url: { type: 'string', description: 'URL для возврата после оплаты' },
+        },
+      },
       // Equipment
       CreateEquipmentDTO: {
         type: 'object',
@@ -1182,6 +1192,59 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } } },
         responses: { '201': { description: 'Created' }, '400': { description: 'Ошибка валидации' } },
       },
+    },
+    '/admin/payments': {
+      post: {
+        tags: ['Payments'],
+        summary: 'Создать платёж со скидкой (только админ)',
+        description: 'Позволяет администратору создать ссылку на оплату со специальной скидкой. Например, пользователь позвонил менеджеру, попросил скидку, менеджер создаёт платёж с уменьшенной суммой.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AdminCreatePaymentDTO' },
+              example: {
+                bookingId: '507f1f77bcf86cd799439011',
+                discountAmount: 2000,
+                discountReason: 'Скидка по запросу клиента',
+                return_url: 'http://picassostudio.ru/'
+              }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Платёж создан успешно',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    payment: {
+                      type: 'object',
+                      description: 'Объект платежа от YooKassa с ссылкой на оплату'
+                    },
+                    discount: {
+                      type: 'object',
+                      properties: {
+                        amount: { type: 'number', description: 'Размер скидки' },
+                        reason: { type: 'string', description: 'Причина скидки' },
+                        originalAmount: { type: 'number', description: 'Исходная сумма' },
+                        finalAmount: { type: 'number', description: 'Итоговая сумма к оплате' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации или бронирование уже оплачено' },
+          '404': { description: 'Бронирование или пользователь не найдены' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
     },
     '/payments/{id}': {
       get: {

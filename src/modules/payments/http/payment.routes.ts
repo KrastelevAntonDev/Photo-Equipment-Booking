@@ -6,6 +6,8 @@ import { UserJwtPayload } from '@modules/users/domain/user.entity';
 import { PaymentService } from '../application/payment.service';
 import { BookingService } from '@modules/bookings/application/booking.service';
 import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
+import { validateDTO } from '@shared/middlewares/validation.middleware';
+import { AdminCreatePaymentDTO } from './admin-create-payment.dto';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -138,6 +140,104 @@ router.post('/payments/:id/cancel', requireAdminLevel('full'), async (req: Reque
   try {
     const payment = await yookassaService.cancelPayment(req.params.id);
     res.json(payment);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Create payment with custom discount
+router.post('/admin/payments', requireAdminLevel('partial'), validateDTO(AdminCreatePaymentDTO), async (req: Request, res: Response) => {
+  try {
+    const { bookingId, discountAmount, discountReason, return_url } = req.body;
+
+    // Получаем бронирование
+    const booking = await bookingService.getBookingById(bookingId);
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+
+    // Получаем пользователя для чека
+    const { UserMongoRepository } = require('@modules/users/infrastructure/user.mongo.repository');
+    const userRepository = new UserMongoRepository();
+    const user = await userRepository.findById(booking.userId.toString());
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Рассчитываем сумму с учетом административной скидки
+    const originalTotal = booking.totalPrice ?? 0;
+    const alreadyPaid = booking.paidAmount ?? 0;
+    const outstanding = Math.max(0, originalTotal - alreadyPaid);
+    
+    if (outstanding <= 0) {
+      res.status(400).json({ message: 'Booking already fully paid' });
+      return;
+    }
+
+    // Применяем административную скидку
+    const finalAmount = Math.max(0, outstanding - discountAmount);
+    const amountValue = finalAmount.toFixed(2);
+
+    // Формируем описание с информацией о скидке
+    let description = `Оплата бронирования`;
+    if (discountAmount > 0) {
+      description += ` (скидка ${discountAmount} руб${discountReason ? `: ${discountReason}` : ''})`;
+    }
+
+    const payload: CreatePaymentRequest = {
+      amount: {
+        value: amountValue,
+        currency: Currency.RUB,
+      },
+      payment_method_data: {
+        type: PaymentMethodType.Sbp
+      },
+      confirmation: {
+        type: ConfirmationType.Redirect,
+        return_url: return_url || 'http://picassostudio.ru/',
+      },
+      capture: true,
+      description,
+      metadata: {
+        userId: booking.userId.toString(),
+        bookingId: bookingId,
+        paymentOption: 'full',
+        adminDiscount: discountAmount.toString(),
+        adminDiscountReason: discountReason || 'Скидка от администратора',
+        originalAmount: outstanding.toString(),
+      },
+      receipt: {
+        items: [{
+          description,
+          amount: {
+            value: amountValue,
+            currency: Currency.RUB,
+          },
+          quantity: 1,
+          vat_code: 1,
+          payment_subject: 'service',
+          payment_mode: 'full_payment'
+        }],
+        customer: {
+          email: user.email,
+          phone: user.phone,
+        }
+      }
+    };
+
+    const payment = await yookassaService.createPayment(payload);
+    
+    res.status(201).json({
+      payment,
+      discount: {
+        amount: discountAmount,
+        reason: discountReason,
+        originalAmount: outstanding,
+        finalAmount: finalAmount,
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

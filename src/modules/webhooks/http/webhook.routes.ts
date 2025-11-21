@@ -76,14 +76,32 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         // Получаем информацию о бронировании для промокода
         const bookingForPromo = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
 
+        // Проверяем, есть ли административная скидка в metadata
+        const hasAdminDiscount = paymentSuccess.metadata?.adminDiscount;
+        let finalOriginalAmount = bookingForPromo?.originalPrice;
+        let finalDiscount = bookingForPromo?.discount;
+
+        if (hasAdminDiscount) {
+          const adminDiscount = Number(paymentSuccess.metadata.adminDiscount);
+          const originalAmount = Number(paymentSuccess.metadata.originalAmount);
+          
+          // Если была скидка от промокода, суммируем её с административной
+          if (bookingForPromo?.discount) {
+            finalDiscount = bookingForPromo.discount + adminDiscount;
+          } else {
+            finalDiscount = adminDiscount;
+            finalOriginalAmount = originalAmount + adminDiscount;
+          }
+        }
+
 				const paymentData = {
 					bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
           userId: new ObjectId(paymentSuccess.metadata.userId),
           yookassaId: paymentSuccess.id,
           status: paymentSuccess.status as PaymentStatus,
           amount: Number(paymentSuccess.amount.value),
-          originalAmount: bookingForPromo?.originalPrice,
-          discount: bookingForPromo?.discount,
+          originalAmount: finalOriginalAmount,
+          discount: finalDiscount,
           promocode: bookingForPromo?.promocode,
           promocodeId: bookingForPromo?.promocodeId,
           currency: PaymentCurrency.RUB,
