@@ -46,7 +46,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       res.status(404).json({ message: 'Booking not found' });
       return;
     }
-    const total = booking.totalPrice ?? 0;
+    const total = booking.totalPrice ?? 0; // Уже с учётом скидки
     const alreadyPaid = booking.paidAmount ?? 0;
     const outstanding = Math.max(0, total - alreadyPaid);
     if (outstanding <= 0) {
@@ -56,6 +56,8 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
     const desired = paymentOption === 'half' ? total * 0.5 : total;
     const amountToPay = Math.min(outstanding, desired);
     const amountValue = amountToPay.toFixed(2);
+
+    // Информация о промокоде будет извлечена из booking в webhook при сохранении платежа
 
     const payload: CreatePaymentRequest = {
       amount: {

@@ -8,8 +8,8 @@ export class BookingController {
   private bookingService: BookingService;
 	private roomService: RoomService;
 
-  constructor() {
-    this.bookingService = new BookingService();
+  constructor(promocodeService?: any) {
+    this.bookingService = new BookingService(promocodeService);
 		this.roomService = new RoomService();
   }
 

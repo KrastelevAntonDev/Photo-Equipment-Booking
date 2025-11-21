@@ -84,7 +84,11 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           start: { type: 'string', format: 'date-time' },
           end: { type: 'string', format: 'date-time' },
           status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
-          totalPrice: { type: 'number' },
+          totalPrice: { type: 'number', description: 'Итоговая цена (с учётом скидки)' },
+          originalPrice: { type: 'number', description: 'Исходная цена до применения промокода' },
+          discount: { type: 'number', description: 'Размер скидки' },
+          promocode: { type: 'string', description: 'Использованный промокод' },
+          promocodeId: { type: 'string', description: 'ID промокода' },
           paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
           isPaid: { type: 'boolean' },
           paidAmount: { type: 'number' },
@@ -115,6 +119,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           equipmentIds: { type: 'array', items: { type: 'string' } },
           start: { type: 'string', format: 'date-time' },
           end: { type: 'string', format: 'date-time' },
+          promocode: { type: 'string', description: 'Промокод для получения скидки' },
         },
       },
       UpdateBookingDTO: {
@@ -155,6 +160,52 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           textarea: { type: 'string' },
           checkbox: { type: 'boolean' },
           formType: { type: 'string', enum: ['contact', 'booking_food', 'feedback'] },
+        },
+      },
+      // Promocodes
+      Promocode: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          code: { type: 'string', description: 'Уникальный код промокода' },
+          discountAmount: { type: 'number', description: 'Сумма скидки в рублях' },
+          isActive: { type: 'boolean', description: 'Активен ли промокод' },
+          expiresAt: { type: 'string', format: 'date-time', description: 'Дата истечения' },
+          usageLimit: { type: 'number', description: 'Максимальное количество использований' },
+          usedCount: { type: 'number', description: 'Сколько раз использован' },
+          description: { type: 'string', description: 'Описание промокода' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      CreatePromocodeDTO: {
+        type: 'object',
+        required: ['code', 'discountAmount'],
+        properties: {
+          code: { type: 'string', description: 'Код промокода' },
+          discountAmount: { type: 'number', minimum: 0, description: 'Сумма скидки в рублях' },
+          isActive: { type: 'boolean', description: 'Активен ли промокод', default: true },
+          expiresAt: { type: 'string', format: 'date-time', description: 'Дата истечения' },
+          usageLimit: { type: 'number', minimum: 1, description: 'Максимальное количество использований' },
+          description: { type: 'string', description: 'Описание промокода' },
+        },
+      },
+      UpdatePromocodeDTO: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', description: 'Код промокода' },
+          discountAmount: { type: 'number', minimum: 0, description: 'Сумма скидки в рублях' },
+          isActive: { type: 'boolean', description: 'Активен ли промокод' },
+          expiresAt: { type: 'string', format: 'date-time', description: 'Дата истечения' },
+          usageLimit: { type: 'number', minimum: 1, description: 'Максимальное количество использований' },
+          description: { type: 'string', description: 'Описание промокода' },
+        },
+      },
+      ValidatePromocodeDTO: {
+        type: 'object',
+        required: ['code'],
+        properties: {
+          code: { type: 'string', description: 'Код промокода для проверки' },
         },
       },
       CreateUserDTO: {
@@ -314,6 +365,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
     { name: 'Bookings' },
     { name: 'Forms' },
     { name: 'Payments' },
+    { name: 'Promocodes', description: 'Управление промокодами и скидками' },
     { name: 'SMS', description: 'Отправка SMS/Omni, управление, вебхуки, статистика' },
     { name: 'Uploads', description: 'Загрузка файлов и изображений' },
   ],
@@ -1247,6 +1299,206 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           '500': { description: 'Ошибка при получении данных из ЮKassa' }
         },
       },
+    },
+    // Promocodes
+    '/api/promocodes': {
+      post: {
+        tags: ['Promocodes'],
+        summary: 'Создать новый промокод',
+        description: 'Создание нового промокода. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreatePromocodeDTO' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Промокод успешно создан',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Promocode' }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации или промокод с таким кодом уже существует' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      },
+      get: {
+        tags: ['Promocodes'],
+        summary: 'Получить список всех промокодов',
+        description: 'Получение списка всех промокодов. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'query',
+            name: 'skip',
+            schema: { type: 'integer', default: 0 },
+            description: 'Количество записей для пропуска'
+          },
+          {
+            in: 'query',
+            name: 'limit',
+            schema: { type: 'integer', default: 100 },
+            description: 'Максимальное количество записей'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Список промокодов',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Promocode' }
+                }
+              }
+            }
+          },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/promocodes/validate': {
+      post: {
+        tags: ['Promocodes'],
+        summary: 'Проверить валидность промокода',
+        description: 'Проверка промокода на валидность (активность, срок действия, лимит использований).',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ValidatePromocodeDTO' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Результат валидации',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    valid: { type: 'boolean', description: 'Валиден ли промокод' },
+                    promocode: { $ref: '#/components/schemas/Promocode', description: 'Данные промокода (если валиден)' },
+                    error: { type: 'string', description: 'Сообщение об ошибке (если не валиден)' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации запроса' },
+          '401': { description: 'Не авторизован' }
+        }
+      }
+    },
+    '/api/promocodes/{id}': {
+      get: {
+        tags: ['Promocodes'],
+        summary: 'Получить промокод по ID',
+        description: 'Получение промокода по идентификатору. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID промокода'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Промокод найден',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Promocode' }
+              }
+            }
+          },
+          '404': { description: 'Промокод не найден' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      },
+      put: {
+        tags: ['Promocodes'],
+        summary: 'Обновить промокод',
+        description: 'Обновление данных промокода. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID промокода'
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/UpdatePromocodeDTO' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Промокод обновлён',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Promocode' }
+              }
+            }
+          },
+          '404': { description: 'Промокод не найден' },
+          '400': { description: 'Ошибка валидации' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      },
+      delete: {
+        tags: ['Promocodes'],
+        summary: 'Удалить промокод',
+        description: 'Мягкое удаление промокода (установка флага isDeleted). Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID промокода'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Промокод удалён',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Промокод успешно удалён' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { description: 'Промокод не найден' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
     },
   },
 };

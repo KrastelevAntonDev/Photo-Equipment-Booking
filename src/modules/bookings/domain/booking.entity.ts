@@ -11,6 +11,10 @@ export interface Booking {
   end: Date;                                      // дата-время окончания брони
   status: "pending" | "confirmed" | "cancelled" | "completed"; // статусы брони
   totalPrice: number;                             // итоговая сумма
+  originalPrice?: number;                         // исходная цена до применения промокода
+  discount?: number;                              // размер скидки (если применён промокод)
+  promocode?: string;                             // использованный промокод
+  promocodeId?: ObjectId;                         // ID промокода
   paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; // способ оплаты
   isPaid?: boolean;                               // признак полной оплаты
   paidAmount?: number;                            // сколько оплачено суммарно

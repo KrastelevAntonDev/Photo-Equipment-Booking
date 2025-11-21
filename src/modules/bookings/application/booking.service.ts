@@ -7,6 +7,7 @@ import { IRoomRepository } from "@modules/rooms/domain/room.repository";
 import { RoomMongoRepository } from "@modules/rooms/infrastructure/room.mongo.repository";
 import { IEquipmentRepository } from "@modules/equipment/domain/equipment.repository";
 import { EquipmentMongoRepository } from "@modules/equipment/infrastructure/equipment.mongo.repository";
+import { PromocodeService } from "@modules/promocodes/application/promocode.service";
 import { ObjectId } from "mongodb";
 
 export class BookingService {
@@ -14,12 +15,14 @@ export class BookingService {
 	private userRepository: IUserRepository;
 	private roomRepository: IRoomRepository;
 	private equipmentRepository: IEquipmentRepository;
+	private promocodeService?: PromocodeService;
 
-	constructor() {
+	constructor(promocodeService?: PromocodeService) {
 		this.bookingRepository = new BookingMongoRepository();
 		this.userRepository = new UserMongoRepository();
 		this.roomRepository = new RoomMongoRepository();
 		this.equipmentRepository = new EquipmentMongoRepository();
+		this.promocodeService = promocodeService;
 	}
 
 	async getAllBookings(): Promise<Booking[]> {
@@ -76,6 +79,29 @@ export class BookingService {
 			booking.start,
 			booking.end
 		);
+
+		// Применение промокода, если указан
+		let finalPrice = computedTotal;
+		let originalPrice: number | undefined;
+		let discount: number | undefined;
+		let promocodeData: string | undefined;
+		let promocodeId: ObjectId | undefined;
+
+		if (booking.promocode && this.promocodeService) {
+			const promoResult = await this.promocodeService.applyPromocode(
+				booking.promocode,
+				computedTotal
+			);
+
+			if (promoResult.success && promoResult.discountedAmount !== undefined) {
+				originalPrice = computedTotal;
+				finalPrice = promoResult.discountedAmount;
+				discount = promoResult.discount;
+				promocodeData = booking.promocode.toUpperCase();
+				promocodeId = promoResult.promocode?._id;
+			}
+		}
+
 		const newBody = {
 			...booking,
 			status: "pending",
@@ -86,7 +112,11 @@ export class BookingService {
 			updatedAt: new Date(),
 			start: new Date(booking.start),
 			end: new Date(booking.end),
-			totalPrice: computedTotal,
+			totalPrice: finalPrice,
+			originalPrice,
+			discount,
+			promocode: promocodeData,
+			promocodeId,
 			paymentMethod: "online", // пользователь создаёт — оплата только онлайн
 			isPaid: false,
 			paidAmount: 0,

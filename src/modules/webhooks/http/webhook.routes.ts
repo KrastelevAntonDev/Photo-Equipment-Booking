@@ -72,12 +72,20 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           console.warn('Missing metadata in payment success webhook');
           break;
         }
+
+        // Получаем информацию о бронировании для промокода
+        const bookingForPromo = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
+
 				const paymentData = {
 					bookingId: new ObjectId(paymentSuccess.metadata.bookingId),
           userId: new ObjectId(paymentSuccess.metadata.userId),
           yookassaId: paymentSuccess.id,
           status: paymentSuccess.status as PaymentStatus,
           amount: Number(paymentSuccess.amount.value),
+          originalAmount: bookingForPromo?.originalPrice,
+          discount: bookingForPromo?.discount,
+          promocode: bookingForPromo?.promocode,
+          promocodeId: bookingForPromo?.promocodeId,
           currency: PaymentCurrency.RUB,
           paid: paymentSuccess.paid,
           refundable: paymentSuccess.refundable,

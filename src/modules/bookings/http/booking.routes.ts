@@ -3,12 +3,21 @@ import { BookingController } from './booking.controller';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateBookingDTO } from './create-booking.dto';
 import { authMiddleware } from '@shared/middlewares/auth.middleware';
-import { adminMiddleware, requireAdminLevel } from '@shared/middlewares/admin.middleware';
+import { requireAdminLevel } from '@shared/middlewares/admin.middleware';
 import { UpdateBookingDTO } from './update-booking.dto';
 import { AdminCreateBookingDTO } from './admin-create-booking.dto';
+import { PromocodeService } from '@modules/promocodes/application/promocode.service';
+import { PromocodeMongoRepository } from '@modules/promocodes/infrastructure/promocode.mongo.repository';
+import { getDB } from '@/config/database';
 
 const router = Router();
-const bookingController = new BookingController();
+
+// Инициализация сервиса промокодов
+const db = getDB();
+const promocodeRepository = new PromocodeMongoRepository(db);
+const promocodeService = new PromocodeService(promocodeRepository);
+
+const bookingController = new BookingController(promocodeService);
 
 router.get('/bookings', authMiddleware, (req, res) => bookingController.getAllBookings(req, res));
 router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, res) => {

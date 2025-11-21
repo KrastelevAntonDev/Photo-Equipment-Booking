@@ -10,7 +10,11 @@ export interface Payment {
   userId: ObjectId; // Ссылка на пользователя
   yookassaId: string; // ID платежа в YooKassa
   status: 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
-  amount: number; // Сумма платежа
+  amount: number; // Сумма платежа (после применения скидки)
+  originalAmount?: number; // Исходная сумма до применения скидки
+  discount?: number; // Размер скидки
+  promocode?: string; // Использованный промокод
+  promocodeId?: ObjectId; // ID промокода
   currency: PaymentCurrency;
   description?: string;
   paid: boolean;
