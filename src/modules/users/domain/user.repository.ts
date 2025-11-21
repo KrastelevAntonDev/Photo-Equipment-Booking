@@ -8,6 +8,7 @@ export interface IUserRepository {
 	findById(id: string): Promise<User | null>;
 	addBookingToUser(userId: string, bookingId: string): Promise<void>;
   addFavoriteRoom(userId: string, roomId: string): Promise<void>;
+  updateUser(id: string, data: Partial<User>): Promise<User | null>;
 }
 
 export default IUserRepository;

@@ -225,6 +225,16 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
+      AdminUpdateUserDTO: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email', description: 'Email пользователя' },
+          phone: { type: 'string', description: 'Телефон пользователя' },
+          fullName: { type: 'string', description: 'ФИО пользователя' },
+          balance: { type: 'number', minimum: 0, description: 'Баланс пользователя' },
+          points: { type: 'number', minimum: 0, description: 'Бонусные баллы' },
+        },
+      },
       PaymentCreateRequest: {
         type: 'object',
         required: ['bookingId'],
@@ -1005,6 +1015,67 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           '201': { description: 'Created' },
           '400': { description: 'Ошибка валидации' },
           '409': { description: 'Пользователь с таким email уже существует' },
+        },
+      },
+    },
+    '/admin/users/{id}': {
+      put: {
+        tags: ['Users'],
+        summary: 'Обновить информацию пользователя (админ)',
+        description: 'Позволяет администратору изменять всю информацию пользователя: email, телефон, ФИО, баланс, бонусные баллы',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID пользователя'
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AdminUpdateUserDTO' },
+              example: {
+                email: 'newemail@example.com',
+                phone: '+79991234567',
+                fullName: 'Иванов Иван Иванович',
+                balance: 1000,
+                points: 500
+              }
+            }
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Пользователь успешно обновлён',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    _id: { type: 'string' },
+                    email: { type: 'string' },
+                    phone: { type: 'string' },
+                    fullName: { type: 'string' },
+                    balance: { type: 'number' },
+                    points: { type: 'number' },
+                    favoriteRoomIds: { type: 'array', items: { type: 'string' } },
+                    bookings: { type: 'array', items: { type: 'string' } },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    updatedAt: { type: 'string', format: 'date-time' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации' },
+          '404': { description: 'Пользователь не найден' },
+          '409': { description: 'Пользователь с таким email уже существует' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
         },
       },
     },

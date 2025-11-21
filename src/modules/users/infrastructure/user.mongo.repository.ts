@@ -53,6 +53,19 @@ export class UserMongoRepository implements IUserRepository {
     const filter = { _id: new ObjectId(userId) };
     await this.getCollection().updateOne(filter, { $addToSet: { favoriteRoomIds: new ObjectId(roomId) } });
   }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User | null> {
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+    const _id = new ObjectId(id);
+    const result = await this.getCollection().findOneAndUpdate(
+      { _id },
+      { $set: data },
+      { returnDocument: 'after' }
+    );
+    return result;
+  }
 }
 
 export default UserMongoRepository;

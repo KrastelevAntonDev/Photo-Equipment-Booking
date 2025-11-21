@@ -82,6 +82,27 @@ export class UserController {
     }
   }
 
+  async adminUpdateUser(req: Request, res: Response) {
+    try {
+      const userId = req.params.id;
+      const { email, phone, fullName, balance, points } = req.body;
+      const updated = await this.userService.updateUserByAdmin(userId, {
+        email,
+        phone,
+        fullName,
+        balance,
+        points,
+      });
+      // Убираем passwordHash из ответа
+      const response = { ...updated, passwordHash: undefined };
+      res.json(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const status = /not found/i.test(message) ? 404 : /already exists/i.test(message) ? 409 : 400;
+      res.status(status).json({ message });
+    }
+  }
+
   async addFavoriteRoom(req: Request & { user?: UserJwtPayload }, res: Response) {
     try {
       if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
