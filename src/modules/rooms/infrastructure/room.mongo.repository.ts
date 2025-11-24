@@ -14,7 +14,11 @@ export class RoomMongoRepository implements IRoomRepository {
 	}
 
 	async findAll(): Promise<Room[]> {
-		return this.getCollection().find().toArray();
+		return this.getCollection().find<Room>({ isDeleted: { $ne: true } }).toArray();
+	}
+
+	async findAllIncludingDeleted(): Promise<Room[]> {
+		return this.getCollection().find<Room>({}).toArray();
 	}
 
 	async createRoom(room: Room): Promise<Room> {
@@ -43,6 +47,15 @@ export class RoomMongoRepository implements IRoomRepository {
 		const collection = this.getCollection();
 		await collection.updateOne({ _id }, { $set: update });
 		return collection.findOne({ _id });
+	}
+
+	async softDelete(id: string): Promise<boolean> {
+		if (!ObjectId.isValid(id)) return false;
+		const result = await this.getCollection().updateOne(
+			{ _id: new ObjectId(id) },
+			{ $set: { isDeleted: true, updatedAt: new Date() } }
+		);
+		return result.modifiedCount > 0;
 	}
 }
 

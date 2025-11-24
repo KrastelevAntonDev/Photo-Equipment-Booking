@@ -235,6 +235,61 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           points: { type: 'number', minimum: 0, description: 'Бонусные баллы' },
         },
       },
+      // ATOL Schemas
+      CreateReceiptDTO: {
+        type: 'object',
+        required: ['bookingId', 'paymentType'],
+        properties: {
+          bookingId: { type: 'string', description: 'ID бронирования' },
+          paymentType: { type: 'string', enum: ['cash', 'card'], description: 'Способ оплаты' },
+        },
+      },
+      Receipt: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          bookingId: { type: 'string' },
+          paymentId: { type: 'string' },
+          externalId: { type: 'string', description: 'Внешний ID для АТОЛ' },
+          atolUuid: { type: 'string', description: 'UUID чека в АТОЛ' },
+          status: { type: 'string', enum: ['wait', 'done', 'fail'], description: 'Статус чека' },
+          paymentType: { type: 'string', enum: ['cash', 'card'] },
+          totalAmount: { type: 'number' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                price: { type: 'number' },
+                quantity: { type: 'number' },
+              },
+            },
+          },
+          customerEmail: { type: 'string' },
+          customerPhone: { type: 'string' },
+          customerName: { type: 'string' },
+          fiscalData: {
+            type: 'object',
+            description: 'Данные после фискализации',
+            properties: {
+              fiscalReceiptNumber: { type: 'number' },
+              shiftNumber: { type: 'number' },
+              receiptDatetime: { type: 'string' },
+              fnNumber: { type: 'string' },
+              ecrRegistrationNumber: { type: 'string' },
+              fiscalDocumentNumber: { type: 'number' },
+              fiscalDocumentAttribute: { type: 'number' },
+              fnsSite: { type: 'string' },
+              ofdInn: { type: 'string' },
+              ofdReceiptUrl: { type: 'string' },
+            },
+          },
+          error: { type: 'string', description: 'Ошибка, если есть' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
       PaymentCreateRequest: {
         type: 'object',
         required: ['bookingId'],
@@ -268,6 +323,15 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           image: { type: 'string' },
         },
       },
+      UpdateEquipmentDTO: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          pricePerHour: { type: 'number' },
+          image: { type: 'string' },
+        },
+      },
       Equipment: {
         type: 'object',
         properties: {
@@ -276,9 +340,54 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           description: { type: 'string' },
           pricePerHour: { type: 'number' },
           image: { type: 'string' },
+          images: { type: 'array', items: { type: 'string' }, description: 'URLs изображений' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           isDeleted: { type: 'boolean' },
+        },
+      },
+      // Rooms
+      CreateRoomDTO: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string' },
+          address: { type: 'string' },
+          area: { type: 'number' },
+          pricePerHour: { type: 'number' },
+          category: { type: 'string' },
+          minBookingHours: { type: 'number' },
+          ceilingHeightMeters: { type: 'number' },
+          features: { type: 'array', items: { type: 'string' } },
+          sharedSpace: { type: 'boolean' },
+          cycWall: { type: 'boolean' },
+          hasMakeupTable: { type: 'boolean' },
+          noPassSystem: { type: 'boolean' },
+          pricing: { $ref: '#/components/schemas/RoomPricing' },
+          colorScheme: { type: 'array', items: { type: 'string' } },
+          styles: { type: 'array', items: { type: 'string' } },
+          description: { type: 'string' },
+        },
+      },
+      UpdateRoomDTO: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          address: { type: 'string' },
+          area: { type: 'number' },
+          pricePerHour: { type: 'number' },
+          category: { type: 'string' },
+          minBookingHours: { type: 'number' },
+          ceilingHeightMeters: { type: 'number' },
+          features: { type: 'array', items: { type: 'string' } },
+          sharedSpace: { type: 'boolean' },
+          cycWall: { type: 'boolean' },
+          hasMakeupTable: { type: 'boolean' },
+          noPassSystem: { type: 'boolean' },
+          pricing: { $ref: '#/components/schemas/RoomPricing' },
+          colorScheme: { type: 'array', items: { type: 'string' } },
+          styles: { type: 'array', items: { type: 'string' } },
+          description: { type: 'string' },
         },
       },
       // SMS
@@ -379,6 +488,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
   },
   tags: [
     { name: 'Auth' },
+    { name: 'ATOL', description: 'Фискализация офлайн-платежей (АТОЛ Онлайн)' },
     { name: 'Users' },
     { name: 'Rooms' },
     { name: 'Equipment' },
@@ -1629,6 +1739,315 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             }
           },
           '404': { description: 'Промокод не найден' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/equipment': {
+      get: {
+        tags: ['Equipment'],
+        summary: 'Получить список оборудования (для пользователей)',
+        description: 'Возвращает список активного оборудования (без удалённых).',
+        responses: {
+          '200': {
+            description: 'Список оборудования',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Equipment' }
+                }
+              }
+            }
+          }
+        }
+      },
+      post: {
+        tags: ['Equipment'],
+        summary: 'Создать оборудование (только админ)',
+        description: 'Создание нового оборудования. Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreateEquipmentDTO' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Оборудование создано',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Equipment' }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/admin/equipment': {
+      get: {
+        tags: ['Equipment'],
+        summary: 'Получить всё оборудование (для админов)',
+        description: 'Возвращает список всего оборудования включая удалённое. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Список всего оборудования',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Equipment' }
+                }
+              }
+            }
+          },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/equipment/{id}': {
+      put: {
+        tags: ['Equipment'],
+        summary: 'Обновить оборудование (только админ)',
+        description: 'Обновление данных оборудования. Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID оборудования'
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/UpdateEquipmentDTO' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Оборудование обновлено',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Equipment' }
+              }
+            }
+          },
+          '404': { description: 'Оборудование не найдено' },
+          '400': { description: 'Ошибка валидации' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      },
+      delete: {
+        tags: ['Equipment'],
+        summary: 'Удалить оборудование (только админ)',
+        description: 'Мягкое удаление оборудования (установка флага isDeleted). Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID оборудования'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Оборудование удалено',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Equipment deleted successfully' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { description: 'Оборудование не найдено' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/rooms': {
+      get: {
+        tags: ['Rooms'],
+        summary: 'Получить список студий (для пользователей)',
+        description: 'Возвращает список активных студий (без удалённых).',
+        responses: {
+          '200': {
+            description: 'Список студий',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Room' }
+                }
+              }
+            }
+          }
+        }
+      },
+      post: {
+        tags: ['Rooms'],
+        summary: 'Создать студию (только админ)',
+        description: 'Создание новой студии. Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreateRoomDTO' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Студия создана',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Room' }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/admin/rooms': {
+      get: {
+        tags: ['Rooms'],
+        summary: 'Получить все студии (для админов)',
+        description: 'Возвращает список всех студий включая удалённые. Только для администраторов.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Список всех студий',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Room' }
+                }
+              }
+            }
+          },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/api/rooms/{id}': {
+      get: {
+        tags: ['Rooms'],
+        summary: 'Получить студию по ID',
+        description: 'Возвращает детальную информацию о студии.',
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID студии'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Информация о студии',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Room' }
+              }
+            }
+          },
+          '404': { description: 'Студия не найдена' }
+        }
+      },
+      put: {
+        tags: ['Rooms'],
+        summary: 'Обновить студию (только админ)',
+        description: 'Обновление данных студии. Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID студии'
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/UpdateRoomDTO' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Студия обновлена',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Room' }
+              }
+            }
+          },
+          '404': { description: 'Студия не найдена' },
+          '400': { description: 'Ошибка валидации' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      },
+      delete: {
+        tags: ['Rooms'],
+        summary: 'Удалить студию (только админ)',
+        description: 'Мягкое удаление студии (установка флага isDeleted). Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID студии'
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Студия удалена',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Room deleted successfully' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { description: 'Студия не найдена' },
           '401': { description: 'Не авторизован' },
           '403': { description: 'Доступ запрещён (не админ)' }
         }

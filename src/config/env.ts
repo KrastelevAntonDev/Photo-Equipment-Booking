@@ -21,6 +21,15 @@ const EnvSchema = z.object({
   // SMS Provider (P1SMS)
   P1SMS_API_KEY: z.string().optional(),
   P1SMS_BASE_URL: z.string().default('https://admin.p1sms.ru'),
+
+  // ATOL (Offline Cash Register)
+  ATOL_LOGIN: z.string().default(''),
+  ATOL_PASSWORD: z.string().default(''),
+  ATOL_GROUP_CODE: z.string().default(''),
+  ATOL_INN: z.string().default(''),
+  ATOL_PAYMENT_ADDRESS: z.string().default(''),
+  ATOL_COMPANY_EMAIL: z.string().optional(),
+  ATOL_BASE_URL: z.string().default('https://online.atol.ru'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

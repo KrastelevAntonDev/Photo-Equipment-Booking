@@ -22,6 +22,21 @@ export class EquipmentService {
     return withImages as Equipment[];
   }
 
+  async getAllEquipmentForAdmin(): Promise<Equipment[]> {
+    const list = await this.equipmentRepository.findAllIncludingDeleted();
+    const withImages = await Promise.all(
+      list.map(async (item) => {
+        const images = await this.getEquipmentImageUrls(item.name);
+        return { ...item, images } as Equipment & { images?: string[] };
+      })
+    );
+    return withImages as Equipment[];
+  }
+
+  async deleteEquipment(id: string): Promise<boolean> {
+    return this.equipmentRepository.softDelete(id);
+  }
+
   async createEquipment(equipment: Equipment): Promise<Equipment> {
     return this.equipmentRepository.createEquipment(equipment);
   }

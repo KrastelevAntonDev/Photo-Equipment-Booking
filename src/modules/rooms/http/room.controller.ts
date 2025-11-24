@@ -60,4 +60,27 @@ export class RoomController {
       res.status(500).json({ message: errorMessage });
     }
   }
+
+  async getAllRoomsForAdmin(req: Request, res: Response) {
+    try {
+      const rooms = await this.roomService.getAllRoomsForAdmin();
+      res.json(rooms);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  async deleteRoom(req: Request, res: Response) {
+    try {
+      const deleted = await this.roomService.deleteRoom(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+      res.json({ message: 'Room deleted successfully' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
 }

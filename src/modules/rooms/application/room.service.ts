@@ -23,6 +23,21 @@ export class RoomService {
     return withImages;
   }
 
+  async getAllRoomsForAdmin(): Promise<Room[]> {
+    const rooms = await this.roomRepository.findAllIncludingDeleted();
+    const withImages = await Promise.all(
+      rooms.map(async (room) => {
+        const images = await this.getRoomImageUrls(room.name);
+        return { ...room, images } as Room;
+      })
+    );
+    return withImages;
+  }
+
+  async deleteRoom(id: string): Promise<boolean> {
+    return this.roomRepository.softDelete(id);
+  }
+
   async createRoom(room: Room): Promise<Room> {
     return this.roomRepository.createRoom(room);
   }

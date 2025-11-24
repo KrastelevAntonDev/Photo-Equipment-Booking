@@ -137,3 +137,4 @@ dist
 package-lock.json
 
 admin.seed.ts
+docs

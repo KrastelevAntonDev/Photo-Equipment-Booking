@@ -59,4 +59,27 @@ export class EquipmentController {
       res.status(500).json({ message: errorMessage });
     }
   }
+
+  async getAllEquipmentForAdmin(req: Request, res: Response) {
+    try {
+      const equipment = await this.equipmentService.getAllEquipmentForAdmin();
+      res.json(equipment);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  async deleteEquipment(req: Request, res: Response) {
+    try {
+      const deleted = await this.equipmentService.deleteEquipment(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Equipment not found' });
+      }
+      res.json({ message: 'Equipment deleted successfully' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: errorMessage });
+    }
+  }
 }

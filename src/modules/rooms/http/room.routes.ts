@@ -9,6 +9,7 @@ const router = Router();
 const roomController = new RoomController();
 
 router.get('/rooms', (req, res) => roomController.getAllRooms(req, res));
+router.get('/admin/rooms', adminMiddleware, (req, res) => roomController.getAllRoomsForAdmin(req, res));
 router.post('/rooms', adminMiddleware, validateDTO(CreateRoomDTO), (req, res) => roomController.createRoom(req, res));
 router.get('/rooms/:id', (req, res) => {
 	roomController.getRoomById(req, res);
@@ -16,6 +17,10 @@ router.get('/rooms/:id', (req, res) => {
 
 router.put('/rooms/:id', adminMiddleware, validateDTO(UpdateRoomDTO), (req, res) => {
 	roomController.updateRoom(req, res);
+});
+
+router.delete('/rooms/:id', adminMiddleware, (req, res) => {
+	roomController.deleteRoom(req, res);
 });
 
 export default router;

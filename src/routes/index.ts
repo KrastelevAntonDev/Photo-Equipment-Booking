@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 // Feature module routes
 import authRoutes from '@modules/auth/http/auth.routes';
+// import { atolRoutes } from '@modules/atol/http/atol.routes';
 import bookingRoutes from '@modules/bookings/http/booking.routes';
 import equipmentRoutes from '@modules/equipment/http/equipment.routes';
 import formRoutes from '@modules/forms/http/form.routes';
@@ -18,6 +19,7 @@ const router = Router();
 
 // Mount feature routers (used under /api in app.ts)
 router.use(authRoutes);
+// router.use(atolRoutes);
 router.use(bookingRoutes);
 router.use(equipmentRoutes);
 router.use(formRoutes);
