@@ -73,6 +73,14 @@ export class CreateRoomDTO {
   @IsOptional()
   description?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @IsOptional()
+  @Type(() => Date)
+  availableFrom?: Date;
+
 	constructor(
 		name: string,
 		address: string,

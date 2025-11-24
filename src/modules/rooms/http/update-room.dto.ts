@@ -74,6 +74,14 @@ export class UpdateRoomDTO {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @IsOptional()
+  @Type(() => Date)
+  availableFrom?: Date;
 }
 
 export default UpdateRoomDTO;

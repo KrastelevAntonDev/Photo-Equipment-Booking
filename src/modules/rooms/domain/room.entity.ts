@@ -25,6 +25,8 @@ export interface Room {
   styles: string[];                               // массив стилей (например: ['modern', 'classic', ...])
   description: string;                           // описание
   images: string[];                              // ссылки на фото
+  isAvailable?: boolean;                         // флаг доступности зала (для отображения)
+  availableFrom?: Date;                          // дата начала работы зала
   createdAt?: Date;
   updatedAt?: Date;
   isDeleted?: boolean;

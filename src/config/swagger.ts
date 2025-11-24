@@ -50,6 +50,8 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           styles: { type: 'array', items: { type: 'string' } },
           description: { type: 'string' },
           images: { type: 'array', items: { type: 'string' } },
+          isAvailable: { type: 'boolean', description: 'Флаг доступности зала для отображения' },
+          availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           isDeleted: { type: 'boolean' },
@@ -367,6 +369,8 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           colorScheme: { type: 'array', items: { type: 'string' } },
           styles: { type: 'array', items: { type: 'string' } },
           description: { type: 'string' },
+          isAvailable: { type: 'boolean', description: 'Флаг доступности зала' },
+          availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
         },
       },
       UpdateRoomDTO: {
@@ -388,6 +392,8 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           colorScheme: { type: 'array', items: { type: 'string' } },
           styles: { type: 'array', items: { type: 'string' } },
           description: { type: 'string' },
+          isAvailable: { type: 'boolean', description: 'Флаг доступности зала' },
+          availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
         },
       },
       // SMS
