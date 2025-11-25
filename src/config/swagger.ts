@@ -108,6 +108,13 @@ export const openapiSpec: OpenAPIV3_1.Document = {
               exp: { type: 'number' },
             }
           },
+          notificationsSent: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Типы отправленных уведомлений',
+          },
+          cancelledAt: { type: 'string', format: 'date-time', description: 'Время автоматической отмены' },
+          cancellationReason: { type: 'string', description: 'Причина отмены бронирования' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           isDeleted: { type: 'boolean' },
@@ -394,6 +401,44 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           description: { type: 'string' },
           isAvailable: { type: 'boolean', description: 'Флаг доступности зала' },
           availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
+        },
+      },
+      // Notifications
+      Notification: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          bookingId: { type: 'string', description: 'ID бронирования' },
+          userId: { type: 'string', description: 'ID пользователя' },
+          type: {
+            type: 'string',
+            enum: [
+              'payment_warning_1h',
+              'payment_cancelled_2h',
+              'payment_full_confirmed',
+              'payment_half_confirmed',
+              'reminder_24h_full_paid',
+              'reminder_24h_half_paid',
+            ],
+            description: 'Тип уведомления',
+          },
+          status: {
+            type: 'string',
+            enum: ['pending', 'scheduled', 'processing', 'sent', 'failed', 'cancelled'],
+            description: 'Статус отправки',
+          },
+          priority: { type: 'number', description: 'Приоритет (1-20)' },
+          phoneNumber: { type: 'string', description: 'Номер телефона получателя' },
+          message: { type: 'string', description: 'Текст сообщения' },
+          scheduledFor: { type: 'string', format: 'date-time', description: 'Время запланированной отправки' },
+          sentAt: { type: 'string', format: 'date-time', description: 'Время фактической отправки' },
+          attempts: { type: 'number', description: 'Количество попыток' },
+          maxAttempts: { type: 'number', description: 'Максимум попыток' },
+          lastError: { type: 'string', description: 'Последняя ошибка' },
+          jobId: { type: 'string', description: 'ID задачи в Bull Queue' },
+          metadata: { type: 'object', description: 'Дополнительные данные' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       // SMS
@@ -2058,6 +2103,163 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           '403': { description: 'Доступ запрещён (не админ)' }
         }
       }
+    },
+    '/admin/notifications/stats': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Получить статистику уведомлений (только админ)',
+        description: 'Возвращает статистику по уведомлениям и очередям Bull. Требуется авторизация администратора.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Статистика получена',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        database: {
+                          type: 'object',
+                          properties: {
+                            total: { type: 'number' },
+                            byStatus: { type: 'object' },
+                            byType: { type: 'object' },
+                            failureRate: { type: 'number' },
+                          },
+                        },
+                        queues: { type: 'object' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' },
+          '500': { description: 'Ошибка сервера' },
+        },
+      },
+    },
+    '/admin/notifications/health': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Health check системы уведомлений (только админ)',
+        description: 'Проверяет работоспособность Redis и очередей уведомлений.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Система работает нормально',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        redis: { type: 'boolean' },
+                        activeJobs: { type: 'number' },
+                        timestamp: { type: 'string', format: 'date-time' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '503': { description: 'Система недоступна' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' },
+        },
+      },
+    },
+    '/admin/notifications/booking/{bookingId}': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Получить уведомления по бронированию (только админ)',
+        description: 'Возвращает все уведомления для конкретного бронирования.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'bookingId',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID бронирования (ObjectId)',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Уведомления получены',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/Notification' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Невалидный ID' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' },
+          '500': { description: 'Ошибка сервера' },
+        },
+      },
+    },
+    '/admin/notifications/cancel/{bookingId}': {
+      post: {
+        tags: ['Notifications'],
+        summary: 'Отменить уведомления для бронирования (только админ)',
+        description: 'Отменяет все запланированные уведомления для бронирования.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'bookingId',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID бронирования (ObjectId)',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Уведомления отменены',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        cancelled: { type: 'number', description: 'Количество отменённых уведомлений' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Невалидный ID' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' },
+          '500': { description: 'Ошибка сервера' },
+        },
+      },
     },
   },
 };

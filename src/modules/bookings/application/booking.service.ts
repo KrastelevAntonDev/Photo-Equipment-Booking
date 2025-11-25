@@ -141,6 +141,38 @@ export class BookingService {
 			newBooking._id!.toString()
 		);
 
+		// === Планирование уведомлений для нового бронирования ===
+		try {
+			const NotificationModule = require('@modules/notifications').default;
+			const { BookingNotificationScheduler } = require('./booking-notification.scheduler');
+			
+			const notificationModule = NotificationModule.getInstance();
+			const notificationService = notificationModule.getService();
+			const scheduler = new BookingNotificationScheduler(notificationService);
+
+			// Собираем данные для шаблона
+			const equipmentNames: string[] = [];
+			if (newBooking.equipmentIds && newBooking.equipmentIds.length > 0) {
+				for (const eqId of newBooking.equipmentIds) {
+					const eq = await this.equipmentRepository.findById(eqId.toString());
+					if (eq) equipmentNames.push(eq.name);
+				}
+			}
+
+			const templateData = BookingNotificationScheduler.createTemplateData(
+				newBooking,
+				room.name,
+				equipmentNames
+			);
+
+			// Планируем уведомления
+			await scheduler.scheduleNotificationsForNewBooking(newBooking, templateData);
+			console.log(`📅 Notifications scheduled for booking ${newBooking._id}`);
+		} catch (notifErr: any) {
+			console.error('⚠️ Failed to schedule notifications:', notifErr.message);
+			// Не прерываем создание бронирования из-за ошибки уведомлений
+		}
+
 		return newBooking;
 	}
 

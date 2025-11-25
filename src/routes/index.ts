@@ -14,6 +14,7 @@ import userRoutes from '@modules/users/http/user.routes';
 import ymlRoutes from '@modules/feeds/http/yml.routes';
 import smsRoutes from '@modules/sms/http/sms.routes';
 import uploadRoutes from '@modules/uploads/http/upload.routes';
+import NotificationModule from '@modules/notifications';
 
 const router = Router();
 
@@ -31,5 +32,13 @@ router.use(userRoutes);
 router.use(ymlRoutes);
 router.use(smsRoutes);
 router.use(uploadRoutes);
+
+// Notification routes (admin only)
+try {
+  const notificationModule = NotificationModule.getInstance();
+  router.use('/admin/notifications', notificationModule.getRoutes());
+} catch (err) {
+  console.warn('⚠️ NotificationModule routes not available:', err);
+}
 
 export default router;

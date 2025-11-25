@@ -30,6 +30,12 @@ const EnvSchema = z.object({
   ATOL_PAYMENT_ADDRESS: z.string().default(''),
   ATOL_COMPANY_EMAIL: z.string().optional(),
   ATOL_BASE_URL: z.string().default('https://online.atol.ru'),
+
+  // Redis (for Bull queues)
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.coerce.number().int().positive().default(6379),
+  REDIS_PASSWORD: z.string().optional(),
+  REDIS_DB: z.coerce.number().int().min(0).default(0),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

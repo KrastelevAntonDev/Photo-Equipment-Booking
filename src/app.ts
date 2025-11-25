@@ -7,12 +7,13 @@ import path from 'path';
 import dotenv from 'dotenv';
 import multer from 'multer';
 
-import { connectDB } from '@config/database';
+import { connectDB, getDB } from '@config/database';
 import routes from '@routes';
 import webhookRoutes from '@modules/webhooks/http/webhook.routes';
 import swaggerUi from 'swagger-ui-express';
 import openapiSpec from '@config/swagger';
-
+import NotificationModule from '@modules/notifications';
+import RedisClient from '@config/redis';
 
 import { seedAdmins } from './seed/admin.seed';
 
@@ -44,6 +45,29 @@ const app = express();
 
     console.log('✅ Database connected');
     await seedAdmins();
+
+    // Инициализация Redis и NotificationModule
+    try {
+      console.log('🔌 Connecting to Redis...');
+      const redisClient = RedisClient.getInstance();
+      await redisClient.ping(); // Проверка подключения
+      console.log('✅ Redis connected');
+
+      // Инициализация модуля уведомлений
+      const db = getDB();
+      const { SmsService } = require('@modules/sms/application/sms.service');
+      const { SmsMongoRepository } = require('@modules/sms/infrastructure/sms.mongo.repository');
+      const smsRepository = new SmsMongoRepository(db);
+      const smsService = new SmsService(smsRepository);
+
+      const notificationModule = NotificationModule.getInstance();
+      await notificationModule.initialize(db, smsService);
+      
+      console.log('✅ Notification system initialized');
+    } catch (redisErr) {
+      console.error('⚠️ Redis/Notifications initialization failed:', redisErr);
+      console.log('⚠️ Server will start without notification system');
+    }
   } catch (err) {
     console.error('❌ Initial DB connection failed:', err);
     process.exit(1);
@@ -233,8 +257,25 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} (env: ${env.NODE_ENV})`);
 });
 
-const gracefulShutdown = (signal: string) => {
+const gracefulShutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+  
+  // 1. Закрываем NotificationModule (очереди Bull)
+  try {
+    const notificationModule = NotificationModule.getInstance();
+    await notificationModule.shutdown();
+  } catch (err) {
+    console.error('Error shutting down NotificationModule:', err);
+  }
+
+  // 2. Закрываем Redis
+  try {
+    await RedisClient.close();
+  } catch (err) {
+    console.error('Error closing Redis:', err);
+  }
+
+  // 3. Закрываем HTTP сервер
   server.close(err => {
     if (err) {
       console.error('Error during server close:', err);
@@ -249,7 +290,7 @@ const gracefulShutdown = (signal: string) => {
   setTimeout(() => {
     console.warn('Force exiting after timeout');
     process.exit(1);
-  }, 10_000).unref();
+  }, 15_000).unref(); // Увеличили таймаут для корректного завершения очередей
 };
 
 ['SIGINT', 'SIGTERM'].forEach(sig => {

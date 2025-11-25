@@ -128,8 +128,43 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         } catch (regErr: any) {
           console.error('[webhook] failed to register payment in booking:', regErr.message);
         }
+
+        // === НОВАЯ СИСТЕМА УВЕДОМЛЕНИЙ ===
+        // Отправляем подтверждение оплаты через NotificationService
+        try {
+          const NotificationModule = require('@modules/notifications').default;
+          const { BookingNotificationScheduler } = require('@modules/bookings/application/booking-notification.scheduler');
+          
+          const notificationModule = NotificationModule.getInstance();
+          const notificationService = notificationModule.getService();
+          const scheduler = new BookingNotificationScheduler(notificationService);
+
+          const booking = await bookingService.getBookingById(paymentSuccess.metadata.bookingId);
+          if (booking) {
+            const room = await roomRepository.findById(booking.roomId.toString());
+            const equipmentNames: string[] = [];
+            if (booking.equipmentIds && booking.equipmentIds.length > 0) {
+              const { EquipmentMongoRepository } = require('@modules/equipment/infrastructure/equipment.mongo.repository');
+              const equipmentRepo = new EquipmentMongoRepository();
+              for (const eqId of booking.equipmentIds) {
+                const eq = await equipmentRepo.findById(eqId.toString());
+                if (eq) equipmentNames.push(eq.name);
+              }
+            }
+
+            const templateData = require('@modules/bookings/application/booking-notification.scheduler')
+              .BookingNotificationScheduler.createTemplateData(booking, room?.name || 'Зал', equipmentNames);
+
+            // Отправляем подтверждение оплаты
+            await scheduler.sendPaymentConfirmation(booking, templateData);
+            console.log(`✅ Payment confirmation notification scheduled for booking ${booking._id}`);
+          }
+        } catch (notifErr: any) {
+          console.error('⚠️ Failed to send notification via NotificationService:', notifErr.message);
+          // Fallback на старую систему SMS
+        }
         
-        // Отправка SMS уведомления пользователю
+        // Отправка SMS уведомления пользователю (LEGACY - оставляем как fallback)
         try {
 					console.log('Sending SMS notification for payment:', paymentSuccess.id);
 					
