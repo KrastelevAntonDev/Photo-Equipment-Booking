@@ -44,7 +44,7 @@ const app = express();
     await connectDB();
 
     console.log('✅ Database connected');
-    await seedAdmins();
+    // await seedAdmins();
 
     // Инициализация Redis и NotificationModule
     try {
