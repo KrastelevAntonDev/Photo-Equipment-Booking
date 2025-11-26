@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  # MongoDB (только для внутренней сети Docker)
+  mongodb:
+    image: mongo:7
+    container_name: photo-booking-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGODB_NAME:-myDB}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    networks:
+      - booking-network
   # Redis для Bull очередей
   redis:
     image: redis:7-alpine
@@ -21,9 +39,11 @@ services:
 
   # Node.js API
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+        # MongoDB (только для внутренней сети Docker)
+        MONGODB_URI: "mongodb://mongodb:27017"
+        MONGODB_NAME: "${MONGODB_NAME:-myDB}"
+        MONGO_USERNAME: ${MONGO_USERNAME:-admin}
+        MONGO_PASSWORD: ${MONGO_PASSWORD:-password}
     container_name: photo-booking-api
     restart: unless-stopped
     ports:
@@ -66,6 +86,8 @@ services:
       # Подключаем директорию uploads с хоста
       - ./uploads:/app/dist/public/uploads
     depends_on:
+      mongodb:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -76,11 +98,6 @@ services:
       start_period: 40s
     networks:
       - booking-network
-    # Доступ к MongoDB на хосте Windows
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    # Альтернатива: используйте host network mode (раскомментируйте если extra_hosts не работает)
-    # network_mode: host
 
   # Nginx (опционально - для SSL и reverse proxy)
   nginx:
@@ -102,6 +119,8 @@ services:
       - with-nginx
 
 volumes:
+  mongo_data:
+    driver: local
   redis_data:
     driver: local
 
