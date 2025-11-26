@@ -13,6 +13,8 @@ const EnvSchema = z.object({
   MONGODB_URI: z.string().default('mongodb://localhost:'),
   MONGODB_PORT: z.string().default('27017'),
   MONGODB_NAME: z.string().default('myDB'),
+  MONGO_USERNAME: z.string().default('admin'),
+  MONGO_PASSWORD: z.string().default('password'),
 
   // Payments
   SHOP_ID: z.string().optional(),
