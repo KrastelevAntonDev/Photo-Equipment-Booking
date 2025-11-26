@@ -296,4 +296,4 @@ async function add_image() {
 }
 
 // Запуск
-export default add_image;
+add_image();
