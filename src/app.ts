@@ -52,7 +52,6 @@ const app = express();
 		await seedRooms();
     await seedEquipment();
 		await roomPricingSeed();
-    await add_image()
     // Инициализация Redis и NotificationModule
     try {
       console.log('🔌 Connecting to Redis...');
