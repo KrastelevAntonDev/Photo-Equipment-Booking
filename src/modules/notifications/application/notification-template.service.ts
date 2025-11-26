@@ -15,14 +15,15 @@ export interface BookingTemplateData {
   paidAmount: number;
   remainingAmount: number;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
+  paymentUrl?: string;
 }
 
 /**
  * Сервис для генерации текстов уведомлений
  */
 export class NotificationTemplateService {
-  private readonly rulesUrl = 'https://your-domain.ru/rules';
-  private readonly addressUrl = 'https://your-domain.ru/address';
+  private readonly rulesUrl = 'https://vk.cc/cRD8Wn';
+  private readonly addressUrl = 'https://vk.cc/cRD7Bi';
 
   /**
    * Получить текст уведомления по типу
@@ -56,13 +57,13 @@ export class NotificationTemplateService {
    * Предупреждение через 1 час после создания без оплаты
    */
   private paymentWarning1h(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
+    const { date, time } = this.formatDateAndTime(data.startDate, data.endDate);
+    const bookingNumber = this.getBookingNumber(data.bookingId);
     return (
-      `Здравствуйте, ${data.userName}!\n\n` +
-      `Ваша бронь на ${formatted} еще не оплачена.\n` +
-      `Сумма к оплате: ${data.totalAmount} ₽\n\n` +
-      `⚠️ Бронирование будет автоматически отменено через 1 час, если оплата не поступит.\n\n` +
-      `Оплатите сейчас, чтобы сохранить бронирование.`
+      `Бронь ${bookingNumber}: ${data.roomName}\n` +
+      `Дата: ${date} Время: ${time}\n` +
+      `Без оплаты в течение 1 часа ваша бронь ${bookingNumber} будет снята\n` +
+      `Оплата: ${data.paymentUrl || this.rulesUrl}`
     );
   }
 
@@ -70,30 +71,21 @@ export class NotificationTemplateService {
    * Отмена через 2 часа после создания
    */
   private paymentCancelled2h(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
-    return (
-      `Здравствуйте, ${data.userName}.\n\n` +
-      `К сожалению, ваше бронирование на ${formatted} было автоматически отменено из-за отсутствия оплаты.\n\n` +
-      `Если вы всё ещё хотите забронировать студию, создайте новую бронь на сайте.\n\n` +
-      `Спасибо за понимание!`
-    );
+    const bookingNumber = this.getBookingNumber(data.bookingId);
+    return `Ваша бронь ${bookingNumber} снята за отсутствием оплаты`;
   }
 
   /**
    * Подтверждение 100% оплаты
    */
   private paymentFullConfirmed(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
+    const { date, time } = this.formatDateAndTime(data.startDate, data.endDate);
+    const bookingNumber = this.getBookingNumber(data.bookingId);
     return (
-      `✅ Бронирование подтверждено!\n\n` +
-      `Здравствуйте, ${data.userName}!\n` +
-      `Спасибо за оплату ${data.paidAmount} ₽\n\n` +
-      `Детали бронирования:\n` +
-      `📅 Дата: ${formatted}\n` +
-      `📍 Зал: ${data.roomName}\n` +
-      `${this.formatEquipment(data.equipmentNames)}\n` +
-      `Правила студии: ${this.rulesUrl}\n\n` +
-      `Ждём вас! 🎬`
+      `Бронь ${bookingNumber}: ${data.roomName}\n` +
+      `Дата: ${date} Время: ${time}\n` +
+      `Внесено: 100% сумма ${data.paidAmount} руб.\n` +
+      `Правила: ${this.rulesUrl}`
     );
   }
 
@@ -101,19 +93,13 @@ export class NotificationTemplateService {
    * Подтверждение 50% оплаты
    */
   private paymentHalfConfirmed(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
+    const { date, time } = this.formatDateAndTime(data.startDate, data.endDate);
+    const bookingNumber = this.getBookingNumber(data.bookingId);
     return (
-      `✅ Бронирование подтверждено!\n\n` +
-      `Здравствуйте, ${data.userName}!\n` +
-      `Внесён аванс: ${data.paidAmount} ₽\n` +
-      `Осталось доплатить: ${data.remainingAmount} ₽\n\n` +
-      `⚠️ ВАЖНО: Оставшуюся сумму необходимо внести до начала съёмки.\n\n` +
-      `Детали бронирования:\n` +
-      `📅 Дата: ${formatted}\n` +
-      `📍 Зал: ${data.roomName}\n` +
-      `${this.formatEquipment(data.equipmentNames)}\n` +
-      `Правила студии: ${this.rulesUrl}\n\n` +
-      `Ждём вас! 🎬`
+      `Бронь ${bookingNumber}: ${data.roomName}\n` +
+      `Дата: ${date} Время: ${time}\n` +
+      `Внесено: 50% сумма ${data.paidAmount} руб.\n` +
+      `Правила: ${this.rulesUrl}`
     );
   }
 
@@ -121,16 +107,14 @@ export class NotificationTemplateService {
    * Напоминание за 24 часа (100% оплата)
    */
   private reminder24hFullPaid(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
+    const { date, time } = this.formatDateAndTime(data.startDate, data.endDate);
+    const bookingNumber = this.getBookingNumber(data.bookingId);
     return (
-      `🎬 Напоминание о съёмке!\n\n` +
-      `Здравствуйте, ${data.userName}!\n` +
-      `Завтра у вас забронирована студия:\n\n` +
-      `📅 ${formatted}\n` +
-      `📍 ${data.roomName}\n` +
-      `${this.formatEquipment(data.equipmentNames)}\n` +
-      `Адрес и как пройти: ${this.addressUrl}\n\n` +
-      `До встречи! 🎥`
+      `Бронь ${bookingNumber}: ${data.roomName}\n` +
+      `Дата: ${date} Время: ${time}\n` +
+      `Внесено: 100% сумма ${data.paidAmount} руб.\n` +
+      `Как доехать: ${this.addressUrl}\n` +
+      `Правила: ${this.rulesUrl}`
     );
   }
 
@@ -138,42 +122,51 @@ export class NotificationTemplateService {
    * Напоминание за 24 часа (50% оплата)
    */
   private reminder24hHalfPaid(data: BookingTemplateData): string {
-    const formatted = this.formatDateTime(data.startDate);
+    const { date, time } = this.formatDateAndTime(data.startDate, data.endDate);
+    const bookingNumber = this.getBookingNumber(data.bookingId);
     return (
-      `🎬 Напоминание о съёмке!\n\n` +
-      `Здравствуйте, ${data.userName}!\n` +
-      `Завтра у вас забронирована студия:\n\n` +
-      `📅 ${formatted}\n` +
-      `📍 ${data.roomName}\n` +
-      `${this.formatEquipment(data.equipmentNames)}\n` +
-      `⚠️ Не забудьте доплатить ${data.remainingAmount} ₽ до начала съёмки!\n\n` +
-      `Правила студии: ${this.rulesUrl}\n` +
-      `Адрес: ${this.addressUrl}\n\n` +
-      `До встречи! 🎥`
+      `Бронь ${bookingNumber}: ${data.roomName}\n` +
+      `Дата: ${date} Время: ${time}\n` +
+      `Внесено: 50% сумма ${data.paidAmount} руб.\n` +
+      `Как доехать: ${this.addressUrl}\n` +
+      `Правила: ${this.rulesUrl}`
     );
   }
 
   /**
-   * Форматирование даты и времени
+   * Форматирование даты и времени в отдельные поля
    */
-  private formatDateTime(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = {
-      day: 'numeric',
-      month: 'long',
+  private formatDateAndTime(startDate: Date, endDate: Date): { date: string; time: string } {
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'Europe/Moscow',
+    };
+    
+    const timeOptions: Intl.DateTimeFormatOptions = {
       hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Europe/Moscow',
+      hour12: false,
     };
-    return new Intl.DateTimeFormat('ru-RU', options).format(date);
+    
+    const dateFormatter = new Intl.DateTimeFormat('ru-RU', dateOptions);
+    const timeFormatter = new Intl.DateTimeFormat('ru-RU', timeOptions);
+    
+    const date = dateFormatter.format(startDate);
+    const startTime = timeFormatter.format(startDate);
+    const endTime = timeFormatter.format(endDate);
+    
+    return {
+      date,
+      time: `${startTime}-${endTime}`,
+    };
   }
 
   /**
-   * Форматирование списка оборудования
+   * Получение номера брони из ObjectId
    */
-  private formatEquipment(equipmentNames: string[]): string {
-    if (!equipmentNames || equipmentNames.length === 0) {
-      return '';
-    }
-    return `📦 Оборудование: ${equipmentNames.join(', ')}`;
+  private getBookingNumber(bookingId: ObjectId): string {
+    return bookingId.toString().slice(-4);
   }
 }
