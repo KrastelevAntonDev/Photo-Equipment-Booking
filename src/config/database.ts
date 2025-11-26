@@ -4,7 +4,11 @@ let db: Db;
 
 export const connectDB = async () => {
   try {
-    const uri = env.MONGODB_URI + env.MONGODB_PORT;
+    // If MONGODB_URI already contains port (like mongodb://host:27017), use it as-is
+    // Otherwise, append MONGODB_PORT to MONGODB_URI
+    const uri = env.MONGODB_URI.includes(':27017') || env.MONGODB_URI.includes(':') && env.MONGODB_URI.split(':').length > 2
+      ? env.MONGODB_URI
+      : env.MONGODB_URI + env.MONGODB_PORT;
 
 		const client = new MongoClient(uri);
     await client.connect();

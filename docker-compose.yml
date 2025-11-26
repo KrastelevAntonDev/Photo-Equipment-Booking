@@ -34,10 +34,9 @@ services:
       PORT: 3000
       JSON_LIMIT: 10mb
 
-      # MongoDB (подключение к хосту)
-      MONGODB_URI: mongodb://host.docker.internal:
-      MONGODB_PORT: 27017
-      MONGODB_NAME: ${MONGODB_NAME:-myDB}
+      # MongoDB (подключение к хосту Windows)
+      MONGODB_URI: "mongodb://host.docker.internal:27017"
+      MONGODB_NAME: "${MONGODB_NAME:-myDB}"
 
       # Redis (внутренний)
       REDIS_HOST: redis
@@ -76,9 +75,11 @@ services:
       start_period: 40s
     networks:
       - booking-network
-    # Доступ к MongoDB на хосте
+    # Доступ к MongoDB на хосте Windows
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Альтернатива: используйте host network mode (раскомментируйте если extra_hosts не работает)
+    # network_mode: host
 
   # Nginx (опционально - для SSL и reverse proxy)
   nginx:

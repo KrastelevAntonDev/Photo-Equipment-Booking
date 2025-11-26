@@ -32,11 +32,10 @@ COPY package.json pnpm-lock.yaml ./
 # Устанавливаем только production зависимости
 RUN pnpm install --prod --frozen-lockfile
 
-# Копируем собранное приложение из builder
+# Копируем собранное приложение из builder (включая dist/public)
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
 
-# Создаём директорию для uploads
+# Создаём директорию для uploads (если ещё не существует)
 RUN mkdir -p /app/dist/public/uploads/equipment /app/dist/public/uploads/rooms
 
 # Переменные окружения по умолчанию
