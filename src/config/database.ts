@@ -5,9 +5,11 @@ let db: Db;
 export const connectDB = async () => {
   try {
     // Формируем строку подключения с авторизацией
-    const uri = env.MONGODB_URI.includes('mongodb://')
-      ? env.MONGODB_URI
-      : `mongodb://admin:${env.MONGO_PASSWORD}@mongodb:27017/${env.MONGODB_NAME}?authSource=admin`;
+    let uri = `mongodb://mongodb:27017/${env.MONGODB_NAME}`;
+    // Добавляем аутентификацию, если заданы credentials
+    if (env.MONGO_USERNAME && env.MONGO_PASSWORD) {
+      uri = `mongodb://${env.MONGO_USERNAME}:${encodeURIComponent(env.MONGO_PASSWORD)}@mongodb:27017/${env.MONGODB_NAME}?authSource=admin`;
+    }
 
     const client = new MongoClient(uri);
     await client.connect();

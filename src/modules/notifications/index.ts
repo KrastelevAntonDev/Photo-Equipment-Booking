@@ -150,7 +150,7 @@ class NotificationModule {
           name: 'bookingId_type_unique',
           unique: true,
           partialFilterExpression: {
-            status: { $nin: ['cancelled', 'failed'] },
+            status: { $in: ['pending', 'sent', 'sending'] },
           },
         },
       ]);
