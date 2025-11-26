@@ -35,6 +35,9 @@ RUN pnpm install --prod --frozen-lockfile
 # Копируем собранное приложение из builder (включая dist/public)
 COPY --from=builder /app/dist ./dist
 
+# Копируем seed файлы
+COPY --from=builder /app/info.csv /app/new-info.csv /app/fileconverts.json ./
+
 # Создаём директорию для uploads (если ещё не существует)
 RUN mkdir -p /app/dist/public/uploads/equipment /app/dist/public/uploads/rooms
 
