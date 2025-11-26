@@ -48,10 +48,6 @@ const app = express();
     await connectDB();
 
     console.log('✅ Database connected');
-    await seedAdmins();
-		await seedRooms();
-    await seedEquipment();
-		await roomPricingSeed();
     // Инициализация Redis и NotificationModule
     try {
       console.log('🔌 Connecting to Redis...');
