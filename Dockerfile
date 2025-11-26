@@ -38,6 +38,12 @@ COPY --from=builder /app/dist ./dist
 # Копируем seed файлы
 COPY --from=builder /app/info.csv /app/new-info.csv /app/fileconverts.json ./
 
+# Копируем фотографии
+COPY --from=builder /app/uploads ./dist/public/uploads
+
+# Создаём директорию для uploads (если ещё не существует)
+RUN mkdir -p /app/dist/public/uploads/equipment /app/dist/public/uploads/rooms
+
 # Создаём директорию для uploads (если ещё не существует)
 RUN mkdir -p /app/dist/public/uploads/equipment /app/dist/public/uploads/rooms
 

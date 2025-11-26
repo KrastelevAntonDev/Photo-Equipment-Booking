@@ -3,7 +3,6 @@ dist
 .git
 .env
 *.md
-uploads
 tmp
 .vscode
 .idea
