@@ -13,9 +13,9 @@ services:
       - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "true"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
+      interval: 1s
+      timeout: 1s
+      retries: 1
     networks:
       - booking-network
   # Redis для Bull очередей

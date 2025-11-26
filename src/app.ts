@@ -16,6 +16,10 @@ import NotificationModule from '@modules/notifications';
 import RedisClient from '@config/redis';
 
 import { seedAdmins } from './seed/admin.seed';
+import { seedEquipment } from './seed/equipment.seed';
+import { seedRooms } from './seed/room.seed';
+import { roomPricingSeed } from './seed/rooms.pricing.seed';
+import add_image from './seed/add-images.seed'
 
 import { env, isProd } from '@config/env';
 import { errorHandler } from '@shared/errors/error.middleware';
@@ -44,8 +48,11 @@ const app = express();
     await connectDB();
 
     console.log('✅ Database connected');
-    // await seedAdmins();
-
+    await seedAdmins();
+		await seedRooms();
+    await seedEquipment();
+		await roomPricingSeed();
+    await add_image()
     // Инициализация Redis и NotificationModule
     try {
       console.log('🔌 Connecting to Redis...');
