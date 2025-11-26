@@ -33,6 +33,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       JSON_LIMIT: 10mb
+      JWT_SECRET: ${JWT_SECRET}
 
       # MongoDB (подключение к хосту Windows)
       MONGODB_URI: "mongodb://host.docker.internal:27017"
