@@ -38,6 +38,9 @@ const EnvSchema = z.object({
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.coerce.number().int().min(0).default(0),
+	dev_admin_pass: z.string(),
+	full_admin_pass: z.string(),
+	admin_pass: z.string(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

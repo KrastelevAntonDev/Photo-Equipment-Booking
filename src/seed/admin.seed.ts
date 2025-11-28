@@ -1,24 +1,25 @@
 import { AdminMongoRepository } from '@modules/users/infrastructure/admin.mongo.repository';
 import { hashSync } from 'bcryptjs';
+import { env } from '@config/env';
 
 const admins = [
   {
     email: 'dev_admin@picassostudio.ru',
-    passwordHash: hashSync('DevInfrastructure', 10),
+    passwordHash: hashSync(env.dev_admin_pass, 10),
     phone: '+79999999990',
     accessLevel: 'full' as const,
     isDeleted: false,
   },
     {
     email: 'full_admin@picassostudio.ru',
-    passwordHash: hashSync('^0APLiYbu#U*@1&*Ny1N', 10),
+    passwordHash: hashSync(env.full_admin_pass, 10),
     phone: '+79999999990',
     accessLevel: 'full' as const,
     isDeleted: false,
   },
   {
     email: 'admin@picassostudio.ru',
-    passwordHash: hashSync('!o3##Z8t1J!2VdY!j%&U', 10),
+    passwordHash: hashSync(env.admin_pass, 10),
     phone: '+79999999998',
     accessLevel: 'partial' as const,
     isDeleted: false,
