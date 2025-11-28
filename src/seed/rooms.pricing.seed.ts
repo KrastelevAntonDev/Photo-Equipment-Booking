@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { getDB } from '@config/database';
+import { connectDB, getDB } from '@config/database';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 
 type CsvRecord = { studio: string; category: string; info: string };
@@ -72,6 +72,7 @@ function pickMeta(info: string) {
 }
 
 export async function roomPricingSeed() {
+  await connectDB();
   const csvPath = path.resolve(process.cwd(), 'info.csv');
   if (!fs.existsSync(csvPath)) {
     console.error('[seed] info.csv not found:', csvPath);
@@ -134,4 +135,17 @@ export async function roomPricingSeed() {
       console.log('[seed] Created room:', name, res.insertedId.toString());
     }
   }
+}
+
+// Запуск скрипта
+if (require.main === module) {
+  roomPricingSeed()
+    .then(() => {
+      console.log('✅ Seed rooms pricing completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seed rooms pricing failed:', error);
+      process.exit(1);
+    });
 }

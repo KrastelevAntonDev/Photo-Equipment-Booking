@@ -41,6 +41,17 @@ export class EquipmentMongoRepository implements IEquipmentRepository {
 	async updateEquipment(id: string, data: Partial<Equipment>): Promise<Equipment | null> {
 		if (!ObjectId.isValid(id)) return null;
 		const _id = new ObjectId(id);
+		
+		// Если обновляется totalQuantity или bookedQuantity, пересчитываем availableQuantity
+		if (data.totalQuantity !== undefined || data.bookedQuantity !== undefined) {
+			const current = await this.getCollection().findOne({ _id });
+			if (current) {
+				const totalQuantity = data.totalQuantity ?? current.totalQuantity ?? 0;
+				const bookedQuantity = data.bookedQuantity ?? current.bookedQuantity ?? 0;
+				data.availableQuantity = Math.max(0, totalQuantity - bookedQuantity);
+			}
+		}
+		
 		const update: any = { ...data, updatedAt: new Date() };
 		delete update._id;
 		const collection = this.getCollection();

@@ -18,8 +18,18 @@ export class UploadController {
       storage: multer.diskStorage({
         destination: (req, _file, cb) => {
           const target = (req as any)._uploadTarget as { baseDir: string } | undefined;
-          if (!target) return cb(new Error('Upload target not resolved'), '');
-          fs.mkdirSync(target.baseDir, { recursive: true });
+          if (!target) {
+            console.error('[upload] Upload target not resolved');
+            return cb(new Error('Upload target not resolved'), '');
+          }
+          console.log(`[upload] Creating directory: ${target.baseDir}`);
+          try {
+            fs.mkdirSync(target.baseDir, { recursive: true });
+            console.log(`[upload] Directory created: ${target.baseDir}`);
+          } catch (err: any) {
+            console.error(`[upload] Error creating directory ${target.baseDir}:`, err);
+            return cb(err, '');
+          }
           cb(null, target.baseDir);
         },
         filename: (_req, file, cb) => {
@@ -48,17 +58,23 @@ export class UploadController {
       let urlBase: string;
       let entityName: string | null = null;
 
+      // Определяем корень проекта (dist в production, src в development)
+      const isProduction = process.env.NODE_ENV === 'production';
+      const projectRoot = isProduction 
+        ? path.join(__dirname, '..', '..', '..') // dist в production
+        : path.join(__dirname, '..', '..', '..'); // src в development
+      
       if (type === 'room') {
         const room = await this.roomRepo.findById(id);
         if (!room) return res.status(404).json({ message: 'Room not found' });
         entityName = room.name;
-        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms', entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', entityName);
         urlBase = ['/public', 'uploads', 'rooms', encodeURIComponent(entityName)].join('/');
       } else {
         const eq = await this.eqRepo.findById(id);
         if (!eq) return res.status(404).json({ message: 'Equipment not found' });
         entityName = eq.name;
-        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'equipment', entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', entityName);
         urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
       }
 
@@ -75,13 +91,34 @@ export class UploadController {
         try {
           if (type === 'room') {
             const current = await this.roomRepo.findById(id);
-            if (!current) return res.status(404).json({ message: 'Room not found' });
+            if (!current) {
+              console.error(`[upload] Room not found: ${id}`);
+              return res.status(404).json({ message: 'Room not found' });
+            }
             const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
-            await this.roomRepo.updateRoom(id, { images: nextImages });
+            console.log(`[upload] Updating room ${id} with images:`, nextImages);
+            const updated = await this.roomRepo.updateRoom(id, { images: nextImages });
+            if (!updated) {
+              console.error(`[upload] Failed to update room ${id}`);
+              return res.status(500).json({ message: 'Failed to update room' });
+            }
+            console.log(`[upload] Room ${id} updated successfully`);
           } else {
-            await this.eqRepo.updateEquipment(id, { image: publicUrl });
+            const current = await this.eqRepo.findById(id);
+            if (!current) {
+              console.error(`[upload] Equipment not found: ${id}`);
+              return res.status(404).json({ message: 'Equipment not found' });
+            }
+            console.log(`[upload] Updating equipment ${id} with image:`, publicUrl);
+            const updated = await this.eqRepo.updateEquipment(id, { image: publicUrl });
+            if (!updated) {
+              console.error(`[upload] Failed to update equipment ${id}`);
+              return res.status(500).json({ message: 'Failed to update equipment' });
+            }
+            console.log(`[upload] Equipment ${id} updated successfully`);
           }
         } catch (e: any) {
+          console.error(`[upload] Error updating ${type} ${id}:`, e);
           return next(e);
         }
 
@@ -117,18 +154,36 @@ export class UploadController {
       let urlBase: string;
       let entityName: string | null = null;
 
+      // Определяем корень проекта (dist в production, src в development)
+      const isProduction = process.env.NODE_ENV === 'production';
+      const projectRoot = isProduction 
+        ? path.join(__dirname, '..', '..', '..') // dist в production
+        : path.join(__dirname, '..', '..', '..'); // src в development
+      
+      console.log(`[upload] Multiple upload - __dirname: ${__dirname}`);
+      console.log(`[upload] Multiple upload - NODE_ENV: ${process.env.NODE_ENV}`);
+      console.log(`[upload] Multiple upload - projectRoot: ${projectRoot}`);
+      
       if (type === 'room') {
         const room = await this.roomRepo.findById(id);
-        if (!room) return res.status(404).json({ message: 'Room not found' });
+        if (!room) {
+          console.error(`[upload] Room not found: ${id}`);
+          return res.status(404).json({ message: 'Room not found' });
+        }
         entityName = room.name;
-        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms', entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', entityName);
         urlBase = ['/public', 'uploads', 'rooms', encodeURIComponent(entityName)].join('/');
+        console.log(`[upload] Multiple upload - Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
       } else {
         const eq = await this.eqRepo.findById(id);
-        if (!eq) return res.status(404).json({ message: 'Equipment not found' });
+        if (!eq) {
+          console.error(`[upload] Equipment not found: ${id}`);
+          return res.status(404).json({ message: 'Equipment not found' });
+        }
         entityName = eq.name;
-        baseDir = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'equipment', entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', entityName);
         urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
+        console.log(`[upload] Multiple upload - Equipment: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
       }
 
       (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
@@ -151,14 +206,35 @@ export class UploadController {
         try {
           if (type === 'room') {
             const current = await this.roomRepo.findById(id);
-            if (!current) return res.status(404).json({ message: 'Room not found' });
+            if (!current) {
+              console.error(`[upload] Room not found: ${id}`);
+              return res.status(404).json({ message: 'Room not found' });
+            }
             const nextImages = Array.from(new Set([...(current.images || []), ...uploadedUrls]));
-            await this.roomRepo.updateRoom(id, { images: nextImages });
+            console.log(`[upload] Updating room ${id} with ${uploadedUrls.length} images:`, nextImages);
+            const updated = await this.roomRepo.updateRoom(id, { images: nextImages });
+            if (!updated) {
+              console.error(`[upload] Failed to update room ${id}`);
+              return res.status(500).json({ message: 'Failed to update room' });
+            }
+            console.log(`[upload] Room ${id} updated successfully`);
           } else {
             // Для equipment берём первую картинку
-            await this.eqRepo.updateEquipment(id, { image: uploadedUrls[0] });
+            const current = await this.eqRepo.findById(id);
+            if (!current) {
+              console.error(`[upload] Equipment not found: ${id}`);
+              return res.status(404).json({ message: 'Equipment not found' });
+            }
+            console.log(`[upload] Updating equipment ${id} with image:`, uploadedUrls[0]);
+            const updated = await this.eqRepo.updateEquipment(id, { image: uploadedUrls[0] });
+            if (!updated) {
+              console.error(`[upload] Failed to update equipment ${id}`);
+              return res.status(500).json({ message: 'Failed to update equipment' });
+            }
+            console.log(`[upload] Equipment ${id} updated successfully`);
           }
         } catch (e: any) {
+          console.error(`[upload] Error updating ${type} ${id}:`, e);
           return next(e);
         }
 
@@ -210,7 +286,12 @@ export class UploadController {
         return res.status(400).json({ message: 'URL type mismatch' });
       }
 
-      const filePath = path.join(__dirname, '..', '..', '..', 'public', 'uploads', urlType, entityName, decodedFilename);
+      // Определяем корень проекта (dist в production, src в development)
+      const isProduction = process.env.NODE_ENV === 'production';
+      const projectRoot = isProduction 
+        ? path.join(__dirname, '..', '..', '..') // dist в production
+        : path.join(__dirname, '..', '..', '..'); // src в development
+      const filePath = path.join(projectRoot, 'public', 'uploads', urlType, entityName, decodedFilename);
 
       // Удаляем файл с диска
       if (fs.existsSync(filePath)) {

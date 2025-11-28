@@ -1,3 +1,4 @@
+import { connectDB } from '@config/database';
 import { AdminMongoRepository } from '@modules/users/infrastructure/admin.mongo.repository';
 import { hashSync } from 'bcryptjs';
 import { env } from '@config/env';
@@ -28,6 +29,7 @@ const admins = [
 
 
 export async function seedAdmins() {
+  await connectDB();
   const repo = new AdminMongoRepository();
   for (const admin of admins) {
     const exists = await repo.findByEmail(admin.email);
@@ -38,4 +40,17 @@ export async function seedAdmins() {
       console.log(`Admin ${admin.email} already exists`);
     }
   }
+}
+
+// Запуск скрипта
+if (require.main === module) {
+  seedAdmins()
+    .then(() => {
+      console.log('✅ Seed admins completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seed admins failed:', error);
+      process.exit(1);
+    });
 }

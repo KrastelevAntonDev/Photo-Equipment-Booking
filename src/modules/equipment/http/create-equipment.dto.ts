@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class CreateEquipmentDTO {
   @IsString()
@@ -16,15 +16,22 @@ export class CreateEquipmentDTO {
   @IsOptional()
   image?: string;
 
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  totalQuantity?: number;
+
 	constructor(
 		name: string,
 		description: string,
 		pricePerHour: number,
-		image: string
+		image: string,
+		totalQuantity?: number
 	) {
 		this.name = name;
 		this.description = description;
 		this.pricePerHour = pricePerHour;
 		this.image = image;
+		this.totalQuantity = totalQuantity;
 	}
 }

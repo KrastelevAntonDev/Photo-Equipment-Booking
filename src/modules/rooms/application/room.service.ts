@@ -60,8 +60,12 @@ export class RoomService {
   }
 
   private async getRoomImageUrls(roomName: string): Promise<string[]> {
-    // Базовая директория загрузок для комнат (относительно dist в проде)
-    const uploadsBase = path.join(__dirname, '..', '..', '..', 'public', 'uploads', 'rooms');
+    // Базовая директория загрузок для комнат (относительно dist в проде, src в development)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const projectRoot = isProduction 
+      ? path.join(__dirname, '..', '..', '..') // dist в production
+      : path.join(__dirname, '..', '..', '..'); // src в development
+    const uploadsBase = path.join(projectRoot, 'public', 'uploads', 'rooms');
     const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '_');
     const normalizedTarget = normalize(roomName);
 

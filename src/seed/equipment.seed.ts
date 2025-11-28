@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { connectDB } from '@config/database';
 import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
 import { Equipment } from '@modules/equipment/domain/equipment.entity';
 
@@ -79,6 +80,7 @@ function computePricePerHour(item: RawItem): number {
 }
 
 export async function seedEquipment() {
+  await connectDB();
   const repo = new EquipmentMongoRepository();
   const filePath = path.join(process.cwd(), 'fileconverts.json');
   if (!fs.existsSync(filePath)) {
@@ -131,4 +133,17 @@ export async function seedEquipment() {
   }
 
   console.log(`[seedEquipment] Done. Created ${created} items.`);
+}
+
+// Запуск скрипта
+if (require.main === module) {
+  seedEquipment()
+    .then(() => {
+      console.log('✅ Seed equipment completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seed equipment failed:', error);
+      process.exit(1);
+    });
 }

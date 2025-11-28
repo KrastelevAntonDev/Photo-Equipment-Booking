@@ -73,6 +73,7 @@ function parseMinBooking(v: string): number | undefined {
 }
 
 export async function seedRooms() {
+	await connectDB();
 	const csvPath = path.resolve(process.cwd(), 'new-info.csv');
 	if (!fs.existsSync(csvPath)) {
 		console.warn('[rooms.seed] new-info.csv не найден');
@@ -144,6 +145,19 @@ export async function seedRooms() {
 		}
 	}
 	console.log('[rooms.seed] Завершено');
+}
+
+// Запуск скрипта
+if (require.main === module) {
+	seedRooms()
+		.then(() => {
+			console.log('✅ Seed rooms completed');
+			process.exit(0);
+		})
+		.catch((error) => {
+			console.error('❌ Seed rooms failed:', error);
+			process.exit(1);
+		});
 }
 
 /* LEGACY BLOCK COMMENTED OUT
