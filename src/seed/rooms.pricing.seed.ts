@@ -48,12 +48,11 @@ function extractNumber(text: string, re: RegExp): number | undefined {
 function pickPricing(info: string) {
   const weekday_00_12 = extractNumber(info, /00:00\s*до\s*12:00\s*[–-]\s*([0-9\s]+)\s*р\.?/i);
   const weekday_12_24 = extractNumber(info, /12:00\s*до\s*00:00\s*[–-]\s*([0-9\s]+)\s*р\.?/i);
-  const fri_or_weekend = extractNumber(info, /Пятница\s*с\s*17:00.*?([0-9\s]+)\s*р\.?/i) ?? extractNumber(info, /выходные\/?праздничные.*?-\s*([0-9\s]+)\s*р\.?/i);
+  const weekend = extractNumber(info, /выходные\/?праздничные.*?-\s*([0-9\s]+)\s*р\.?/i);
   return {
     weekday_00_12,
     weekday_12_24,
-    fri_17_24: fri_or_weekend,
-    weekend_holiday_00_24: fri_or_weekend,
+    weekend_holiday_00_24: weekend,
   };
 }
 

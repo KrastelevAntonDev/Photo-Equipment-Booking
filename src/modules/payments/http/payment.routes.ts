@@ -15,25 +15,66 @@ const paymentService = new PaymentService()
 const bookingService = new BookingService()
 // Create payment
 router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwtPayload }, res: Response) => {
+	console.log('req.body', req.body);
+	console.log('req.user', req.user);
+	console.log('req.headers', req.headers);
+	console.log('req.params', req.params);
+	console.log('req.query', req.query);
+	console.log('req.path', req.path);
+	console.log('req.route', req.route);
+	console.log('req.originalUrl', req.originalUrl);
+	console.log('req.baseUrl', req.baseUrl);
+	console.log('req.hostname', req.hostname);
+	console.log('req.protocol', req.protocol);
+	console.log('req.secure', req.secure);
+	console.log('req.ip', req.ip);
+	console.log('start payment route');
+
   if(!req.user) {
+	console.log('Unauthorized');
     res.status(401).json({ message: 'Unauthorized' });
     return
   }
   if(!req.body.bookingId) {
+	console.log('Booking ID is required');
       res.status(400).json({ message: 'Booking ID is required' });
       return
   }
   try {
-    const method = (req.body.method as string | undefined) || 'online';
-    const paymentOption = (req.body.paymentOption as string | undefined) || 'full'; // 'full' | 'half'
+	console.log('Getting booking by ID', req.body.bookingId);
+    const booking = await bookingService.getBookingById(req.body.bookingId);
+    if (!booking) {
+	console.log('Booking not found');
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
 
+    if (booking.userId?.toString() !== req.user.userId) {
+	console.log('Access denied');
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+
+    if (booking.isDeleted || booking.status === 'cancelled') {
+	console.log('Booking is not available for payment');
+      res.status(400).json({ message: 'Booking is not available for payment' });
+      return;
+    }
+	console.log('Booking is available for payment');
+    const method = (req.body.method as string | undefined) || 'online';
+	console.log('Method', method);
+    const paymentOption = (req.body.paymentOption as string | undefined) || 'full'; // 'full' | 'half'
+	console.log('Payment option', paymentOption);
     // Обработка оплаты на месте: не создаём плтёж в YooKassa
     if (method === 'on_site_cash' || method === 'on_site_card') {
+	console.log('Setting on site payment');
       const updated = await bookingService.setOnSitePayment(req.body.bookingId, method);
       if (!updated) {
+	console.log('Booking not found');
         res.status(404).json({ message: 'Booking not found' });
         return;
       }
+	console.log('On site payment set');
       res.status(201).json({
         status: 'on_site_selected',
         method,
@@ -43,11 +84,6 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
     }
 
     // Рассчитываем сумму из брони
-    const booking = await bookingService.getBookingById(req.body.bookingId);
-    if (!booking) {
-      res.status(404).json({ message: 'Booking not found' });
-      return;
-    }
     const total = booking.totalPrice ?? 0; // Уже с учётом скидки
     const alreadyPaid = booking.paidAmount ?? 0;
     const outstanding = Math.max(0, total - alreadyPaid);
@@ -100,7 +136,9 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       }
       // Add other fields from req.body as needed
     };
+	console.log('Creating payment', payload);
     const payment = await yookassaService.createPayment(payload);
+	console.log('Payment created', payment);
     res.status(201).json(payment);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -18,6 +18,29 @@ COPY . .
 # Собираем приложение
 RUN pnpm build
 
+# Девелоперский образ с nodemon
+# Девелоперский образ с nodemon
+FROM node:20-alpine AS dev
+
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install
+
+# Устанавливаем nodemon глобально
+RUN pnpm add -g nodemon
+
+COPY . .
+
+ENV NODE_ENV=development
+EXPOSE 3000
+CMD ["pnpm", "dev"]
+
 # Production образ
 FROM node:20-alpine
 

@@ -57,7 +57,6 @@ export class UpdateRoomDTO {
   pricing?: {
     weekday_00_12?: number;
     weekday_12_24?: number;
-    fri_17_24?: number;
     weekend_holiday_00_24?: number;
   };
 

@@ -25,7 +25,6 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         properties: {
           weekday_00_12: { type: 'number' },
           weekday_12_24: { type: 'number' },
-          fri_17_24: { type: 'number' },
           weekend_holiday_00_24: { type: 'number' },
         },
       },

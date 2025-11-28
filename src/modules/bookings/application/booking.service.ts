@@ -473,26 +473,34 @@ export class BookingService {
 
 	private resolveRoomRate(room: any, dt: Date): number {
 		const pricing = room.pricing || {};
+		const isWeekendOrHoliday = this.isWeekend(dt) || this.isHoliday(dt);
+
+		const pickRate = (...rates: Array<number | undefined>): number => {
+			for (const rate of rates) {
+				if (typeof rate === 'number') {
+					return rate;
+				}
+			}
+			return 0;
+		};
+
+		if (isWeekendOrHoliday) {
+			return pickRate(
+				pricing.weekend_holiday_00_24,
+				pricing.weekday_12_24,
+				pricing.weekday_00_12,
+				room.pricePerHour,
+			);
+		}
+
 		const hour = dt.getHours();
-		const isFri = dt.getDay() === 5;
-		const weekendOrHoliday = this.isWeekend(dt) || this.isHoliday(dt);
+		const isMorning = hour < 12;
 
-		if (weekendOrHoliday) {
-			if (typeof pricing.weekend_holiday_00_24 === 'number') return pricing.weekend_holiday_00_24;
-		}
-		if (isFri && hour >= 17) {
-			if (typeof pricing.fri_17_24 === 'number') return pricing.fri_17_24;
-			if (typeof pricing.weekend_holiday_00_24 === 'number') return pricing.weekend_holiday_00_24;
-		}
-
-		// Будни и пятница до 17:00
-		if (hour < 12) {
-			if (typeof pricing.weekday_00_12 === 'number') return pricing.weekday_00_12;
-		} else {
-			if (typeof pricing.weekday_12_24 === 'number') return pricing.weekday_12_24;
-		}
-
-		// Фоллбек — используем базовую цену, если правила не заданы
-		return room.pricePerHour || 0;
+		return pickRate(
+			isMorning ? pricing.weekday_00_12 : pricing.weekday_12_24,
+			isMorning ? pricing.weekday_12_24 : pricing.weekday_00_12,
+			pricing.weekend_holiday_00_24,
+			room.pricePerHour,
+		);
 	}
 }

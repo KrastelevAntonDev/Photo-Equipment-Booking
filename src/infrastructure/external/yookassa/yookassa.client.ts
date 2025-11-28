@@ -52,6 +52,17 @@ export class YooKassaHttpClient {
       });
       return response.data;
     } catch (error: any) {
+			console.error('Error creating payment', error);
+			console.error('Error creating payment', error.response);
+			console.error('Error creating payment', error.response.data);
+			console.error('Error creating payment', error.response.status);
+			console.error('Error creating payment', error.response.headers);
+			console.error('Error creating payment', error.response.config);
+			console.error('Error creating payment', error.response.request);
+			console.error('Error creating payment', error.response.statusText);
+			console.error('Error creating payment', error.response.status);
+			console.error('Error creating payment', error.response.statusText);
+			console.error('Error creating payment', error.response.statusText);
       if (error.response) {
         const apiError = error.response.data as ApiError;
         throw new Error(`${apiError.code}: ${apiError.description}`);
@@ -63,7 +74,22 @@ export class YooKassaHttpClient {
   // Payments
   async createPayment(payload: CreatePaymentRequest): Promise<Payment> {
     const key = this.generateIdempotencyKey();
-    return this.request<Payment>('POST', '/payments', payload, key);
+    return this.request<Payment>('POST', '/payments', payload, key).then(res => {
+      console.log('Payment created', res.toString());
+      return res;
+    }).catch(err => {
+      console.error('Error creating payment', err);
+			console.error('Error creating payment', err.response.data);
+			console.error('Error creating payment', err.response.status);
+			console.error('Error creating payment', err.response.headers);
+			console.error('Error creating payment', err.response.config);
+			console.error('Error creating payment', err.response.request);
+			console.error('Error creating payment', err.response.statusText);
+			console.error('Error creating payment', err.response.status);
+			console.error('Error creating payment', err.response.statusText);
+			console.error('Error creating payment', err.response.statusText);
+      throw err;
+    });
   }
 
   async getPayment(paymentId: string): Promise<Payment> {
