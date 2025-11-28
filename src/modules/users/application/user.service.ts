@@ -1,6 +1,7 @@
 import { IUserRepository } from '../domain/user.repository';
 import { UserMongoRepository } from '../infrastructure/user.mongo.repository';
 import { User } from '../domain/user.entity';
+import { normalizePhone } from '@shared/utils/phone.utils';
 
 export class UserService {
   private userRepository: IUserRepository;
@@ -33,7 +34,7 @@ export class UserService {
     const newUser: User = {
       email: payload.email,
       passwordHash: '',
-      phone: payload.phone,
+      phone: payload.phone ? normalizePhone(payload.phone) : undefined,
       fullName: payload.fullName,
       favoriteRoomIds: [],
       balance: 0,
@@ -70,6 +71,7 @@ export class UserService {
 
     const updateData: Partial<User> = {
       ...payload,
+      phone: payload.phone ? normalizePhone(payload.phone) : payload.phone,
       updatedAt: new Date(),
     };
 

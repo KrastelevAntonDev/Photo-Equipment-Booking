@@ -3,6 +3,7 @@ import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.re
 import { IAdminRepository } from '@modules/users/domain/admin.repository';
 import { AdminMongoRepository } from '@modules/users/infrastructure/admin.mongo.repository';
 import { User } from '@modules/users/domain/user.entity';
+import { normalizePhone } from '@shared/utils/phone.utils';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -23,7 +24,7 @@ export class AuthService {
     const user: User = {
       email,
       passwordHash,
-      phone,
+      phone: phone ? normalizePhone(phone) : undefined,
       fullName,
       balance: 0,
       points: 0,
@@ -41,7 +42,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('Invalid password');
     const token = jwt.sign(
-      { userId: user._id, email: user.email, phone: user.phone, fullName: user.fullName },
+      { userId: user._id, email: user.email, phone: normalizePhone(user.phone), fullName: user.fullName },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -53,7 +54,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, admin.passwordHash);
     if (!valid) throw new Error('Invalid password');
     const token = jwt.sign(
-      { userId: admin._id, email: admin.email, phone: admin.phone, accessLevel: admin.accessLevel || 'full' },
+      { userId: admin._id, email: admin.email, phone: normalizePhone(admin.phone), accessLevel: admin.accessLevel || 'full' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );

@@ -5,6 +5,7 @@ import { Receipt, ReceiptStatus } from '../domain/receipt.entity';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../../../config/database';
 import { Booking } from '../../bookings/domain/booking.entity';
+import { normalizePhone } from '@shared/utils/phone.utils';
 
 export class AtolController {
   constructor(
@@ -87,7 +88,7 @@ export class AtolController {
         totalAmount: booking.totalPrice,
         items,
         customerEmail: user.email,
-        customerPhone: user.phone,
+        customerPhone: user.phone ? normalizePhone(user.phone) : undefined,
         customerName: user.fullName
       });
 
@@ -97,7 +98,7 @@ export class AtolController {
       this.processReceipt(savedReceipt._id!, {
         externalId,
         customerEmail: user.email,
-        customerPhone: user.phone,
+        customerPhone: user.phone ? normalizePhone(user.phone) : undefined,
         customerName: user.fullName,
         items,
         paymentType,

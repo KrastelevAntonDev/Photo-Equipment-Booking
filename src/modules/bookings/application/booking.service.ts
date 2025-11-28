@@ -8,6 +8,7 @@ import { RoomMongoRepository } from "@modules/rooms/infrastructure/room.mongo.re
 import { IEquipmentRepository } from "@modules/equipment/domain/equipment.repository";
 import { EquipmentMongoRepository } from "@modules/equipment/infrastructure/equipment.mongo.repository";
 import { PromocodeService } from "@modules/promocodes/application/promocode.service";
+import { normalizePhone } from "@shared/utils/phone.utils";
 import { ObjectId } from "mongodb";
 
 export class BookingService {
@@ -257,7 +258,7 @@ export class BookingService {
 			user: {
 				userId: user._id!.toString(),
 				email: user.email,
-				phone: user.phone || '',
+				phone: user.phone ? normalizePhone(user.phone) : '',
 				fullName: user.fullName || user.email,
 				iat: Math.floor(Date.now() / 1000),
 				exp: Math.floor(Date.now() / 1000) + 86400, // +24 часа

@@ -8,6 +8,7 @@ import { BookingService } from '@modules/bookings/application/booking.service';
 import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { AdminCreatePaymentDTO } from './admin-create-payment.dto';
+import { normalizePhone } from '@shared/utils/phone.utils';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -131,7 +132,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
         }],
         customer: {
           email: req.user.email,
-          phone: req.user.phone,
+          phone: req.user.phone ? normalizePhone(req.user.phone) : undefined,
         }
       }
       // Add other fields from req.body as needed
@@ -260,7 +261,7 @@ router.post('/admin/payments', requireAdminLevel('partial'), validateDTO(AdminCr
         }],
         customer: {
           email: user.email,
-          phone: user.phone,
+          phone: user.phone ? normalizePhone(user.phone) : undefined,
         }
       }
     };

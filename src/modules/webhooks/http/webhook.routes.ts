@@ -10,6 +10,7 @@ import { UserMongoRepository } from '@modules/users/infrastructure/user.mongo.re
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { buildReceiptUrl } from '@shared/utils/receipt.utils';
 import { PaymentCurrency } from '@/modules/payments/domain/payment.entity';
+import { normalizePhone } from '@shared/utils/phone.utils';
 
 const router = Router();
 const yookassaService = createPaymentProvider();
@@ -225,8 +226,10 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               smsText = `Оплата подтверждена! Бронь зала "${room.name}" на ${formatDate(booking.start)} с ${formatTime(booking.start)} до ${formatTime(booking.end)}. Сумма: ${paymentSuccess.amount.value} руб. Ждём вас!`;
             }
             
-            // Проверяем формат номера (должен быть 11 цифр без +)
-            let phone = user.phone.replace(/\D/g, '');
+            // Нормализуем номер телефона
+            const normalizedPhone = normalizePhone(user.phone);
+            // Для SMS нужен номер без + (11 цифр)
+            let phone = normalizedPhone.replace(/[^\d]/g, '');
             if (phone.startsWith('8')) {
               phone = '7' + phone.substring(1);
             }

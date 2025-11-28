@@ -2,6 +2,7 @@ import { Collection, ObjectId } from 'mongodb';
 import { getDB } from '@config/database';
 import { User } from '../domain/user.entity';
 import { IUserRepository } from '../domain/user.repository';
+import { normalizePhone } from '@shared/utils/phone.utils';
 
 export class UserMongoRepository implements IUserRepository {
 	private collection: Collection<User> | null = null;
@@ -13,16 +14,25 @@ export class UserMongoRepository implements IUserRepository {
 		return this.collection;
 	}
 
+	private normalizeUserPhone(user: User | null): User | null {
+		if (user && user.phone) {
+			user.phone = normalizePhone(user.phone);
+		}
+		return user;
+	}
+
 	async getUser(id: string): Promise<User | null> {
 		if (!ObjectId.isValid(id)) {
 			return null;
 		}
 		const _id = new ObjectId(id);
-		return this.getCollection().findOne({ _id });
+		const user = await this.getCollection().findOne({ _id });
+		return this.normalizeUserPhone(user);
 	}
 
 	async findAll(): Promise<User[]> {
-		return this.getCollection().find().toArray();
+		const users = await this.getCollection().find().toArray();
+		return users.map(user => this.normalizeUserPhone(user)!).filter(Boolean) as User[];
 	}
 
 	async createUser(user: User): Promise<{ status: boolean }> {
@@ -31,7 +41,8 @@ export class UserMongoRepository implements IUserRepository {
 	}
 
 	async findByEmail(email: string): Promise<User | null> {
-		return this.getCollection().findOne({ email });
+		const user = await this.getCollection().findOne({ email });
+		return this.normalizeUserPhone(user);
 	}
 
 	async findById(id: string): Promise<User | null> {
@@ -39,7 +50,8 @@ export class UserMongoRepository implements IUserRepository {
 			return null;
 		}
 		const _id = new ObjectId(id);
-		return this.getCollection().findOne({ _id });
+		const user = await this.getCollection().findOne({ _id });
+		return this.normalizeUserPhone(user);
 	}
 
 	async addBookingToUser(userId: string, bookingId: string): Promise<void> {
@@ -58,13 +70,17 @@ export class UserMongoRepository implements IUserRepository {
     if (!ObjectId.isValid(id)) {
       return null;
     }
+    // Нормализуем телефон перед обновлением, если он передан
+    if (data.phone) {
+      data.phone = normalizePhone(data.phone);
+    }
     const _id = new ObjectId(id);
     const result = await this.getCollection().findOneAndUpdate(
       { _id },
       { $set: data },
       { returnDocument: 'after' }
     );
-    return result;
+    return this.normalizeUserPhone(result);
   }
 }
 
