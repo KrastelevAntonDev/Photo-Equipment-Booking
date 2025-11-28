@@ -5,12 +5,12 @@ import { NotificationType } from '../domain/notification.entity';
  * Данные бронирования для шаблонов
  */
 export interface BookingTemplateData {
-  bookingId: ObjectId;
+  bookingId: ObjectId | string;
   userName: string;
   roomName: string;
   equipmentNames: string[];
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | string; // Может быть строкой после сериализации из Redis
+  endDate: Date | string;   // Может быть строкой после сериализации из Redis
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
@@ -136,7 +136,19 @@ export class NotificationTemplateService {
   /**
    * Форматирование даты и времени в отдельные поля
    */
-  private formatDateAndTime(startDate: Date, endDate: Date): { date: string; time: string } {
+  private formatDateAndTime(startDate: Date | string, endDate: Date | string): { date: string; time: string } {
+    // Преобразуем строки в Date объекты, если необходимо (после сериализации из Redis)
+    const start = startDate instanceof Date ? startDate : new Date(startDate);
+    const end = endDate instanceof Date ? endDate : new Date(endDate);
+
+    // Проверяем валидность дат
+    if (isNaN(start.getTime())) {
+      throw new Error(`Invalid startDate: ${startDate}`);
+    }
+    if (isNaN(end.getTime())) {
+      throw new Error(`Invalid endDate: ${endDate}`);
+    }
+
     const dateOptions: Intl.DateTimeFormatOptions = {
       day: '2-digit',
       month: '2-digit',
@@ -153,9 +165,9 @@ export class NotificationTemplateService {
     const dateFormatter = new Intl.DateTimeFormat('ru-RU', dateOptions);
     const timeFormatter = new Intl.DateTimeFormat('ru-RU', timeOptions);
     
-    const date = dateFormatter.format(startDate);
-    const startTime = timeFormatter.format(startDate);
-    const endTime = timeFormatter.format(endDate);
+    const date = dateFormatter.format(start);
+    const startTime = timeFormatter.format(start);
+    const endTime = timeFormatter.format(end);
     
     return {
       date,
@@ -166,7 +178,8 @@ export class NotificationTemplateService {
   /**
    * Получение номера брони из ObjectId
    */
-  private getBookingNumber(bookingId: ObjectId): string {
-    return bookingId.toString().slice(-4);
+  private getBookingNumber(bookingId: ObjectId | string): string {
+    const idString = bookingId instanceof ObjectId ? bookingId.toString() : bookingId;
+    return idString.slice(-4);
   }
 }

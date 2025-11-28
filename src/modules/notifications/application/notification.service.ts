@@ -167,8 +167,19 @@ export class NotificationService {
         attempts: job.attemptsMade + 1,
       });
 
+      // Восстанавливаем Date объекты из строк (после сериализации из Redis)
+      const normalizedTemplateData = {
+        ...templateData,
+        startDate: templateData.startDate instanceof Date 
+          ? templateData.startDate 
+          : new Date(templateData.startDate),
+        endDate: templateData.endDate instanceof Date 
+          ? templateData.endDate 
+          : new Date(templateData.endDate),
+      };
+
       // Генерируем сообщение
-      const message = this.templateService.generateMessage(type, templateData);
+      const message = this.templateService.generateMessage(type, normalizedTemplateData);
 
       // Отправляем SMS
       const smsResult = await this.smsService.send({
