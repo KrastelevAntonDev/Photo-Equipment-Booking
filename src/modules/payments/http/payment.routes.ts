@@ -50,12 +50,6 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       return;
     }
 
-    if (booking.userId?.toString() !== req.user.userId) {
-	console.log('Access denied');
-      res.status(403).json({ message: 'Access denied' });
-      return;
-    }
-
     if (booking.isDeleted || booking.status === 'cancelled') {
 	console.log('Booking is not available for payment');
       res.status(400).json({ message: 'Booking is not available for payment' });
