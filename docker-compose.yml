@@ -78,9 +78,6 @@ services:
       ATOL_PAYMENT_ADDRESS: ${ATOL_PAYMENT_ADDRESS:-}
       ATOL_COMPANY_EMAIL: ${ATOL_COMPANY_EMAIL:-}
       ATOL_BASE_URL: https://online.atol.ru
-      dev_admin_pass: ${dev_admin_pass}
-      full_admin_pass: ${full_admin_pass}
-      admin_pass: ${admin_pass}
 
     volumes:
       # Подключаем директорию uploads с хоста
@@ -91,59 +88,11 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - booking-network
-
-  api-dev:
-    profiles:
-      - dev
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: dev
-    container_name: photo-booking-api-dev
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      JSON_LIMIT: 10mb
-      JWT_SECRET: ${JWT_SECRET}
-      MONGODB_URI: "mongodb://mongodb:27017"
-      MONGODB_NAME: "${MONGODB_NAME:-photo-booking-api}"
-      MONGO_USERNAME: ${MONGO_USERNAME:-admin}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-password}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_DB: 0
-      SHOP_ID: ${SHOP_ID}
-      SECRET_KEY: ${SECRET_KEY}
-      P1SMS_API_KEY: ${P1SMS_API_KEY}
-      P1SMS_BASE_URL: https://admin.p1sms.ru
-      ATOL_LOGIN: ${ATOL_LOGIN:-}
-      ATOL_PASSWORD: ${ATOL_PASSWORD:-}
-      ATOL_GROUP_CODE: ${ATOL_GROUP_CODE:-}
-      ATOL_INN: ${ATOL_INN:-}
-      ATOL_PAYMENT_ADDRESS: ${ATOL_PAYMENT_ADDRESS:-}
-      ATOL_COMPANY_EMAIL: ${ATOL_COMPANY_EMAIL:-}
-      ATOL_BASE_URL: https://online.atol.ru
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - .:/app
-      - api_dev_node_modules:/app/node_modules
-      - ./uploads:/app/uploads
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - booking-network
 
@@ -170,8 +119,6 @@ volumes:
   mongo_data:
     driver: local
   redis_data:
-    driver: local
-  api_dev_node_modules:
     driver: local
 
 networks:
