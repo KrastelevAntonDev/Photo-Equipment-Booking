@@ -8,6 +8,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   JSON_LIMIT: z.string().default('10mb'),
+  PUBLIC_SITE_URL: z.string().default('https://picassostudio.ru'),
 
   // MongoDB
   MONGODB_URI: z.string().default('mongodb://localhost:'),
