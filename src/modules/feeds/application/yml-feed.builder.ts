@@ -342,7 +342,7 @@ export function buildYmlFeed(params: BuildYmlFeedParams): BuildYmlFeedResult {
   }
 
   if (includeEquipment) {
-	console.log('equipment', equipment);r
+	console.log('equipment', equipment);
     for (const item of equipment) {
       stats.equipment.total += 1;
       const result = buildEquipmentOffer(item, {
