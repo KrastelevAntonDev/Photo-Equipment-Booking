@@ -14,7 +14,7 @@ import userRoutes from '@modules/users/http/user.routes';
 import ymlRoutes from '@modules/feeds/http/yml.routes';
 import smsRoutes from '@modules/sms/http/sms.routes';
 import uploadRoutes from '@modules/uploads/http/upload.routes';
-import NotificationModule from '@modules/notifications';
+import notificationRoutes from '@modules/notifications/http/notification.routes';
 
 const router = Router();
 
@@ -34,25 +34,6 @@ router.use(smsRoutes);
 router.use(uploadRoutes);
 
 // Notification routes (admin only)
-try {
-  const notificationModule = NotificationModule.getInstance();
-  const notificationRoutes = notificationModule.getRoutes();
-  router.use('/admin/notifications', notificationRoutes);
-  console.log('✅ Notification routes registered at /admin/notifications');
-} catch (err) {
-  console.error('❌ Failed to register NotificationModule routes:', err);
-  // Регистрируем fallback роуты, которые возвращают 503
-  const fallbackRouter = Router();
-  // В Express 5 path-to-regexp не принимает '*' без имени параметра — используем без пути
-  fallbackRouter.use((_req, res) => {
-    res.status(503).json({
-      success: false,
-      error: 'Notification system not initialized',
-      details: 'Please check server logs for initialization errors'
-    });
-  });
-  router.use('/admin/notifications', fallbackRouter);
-  console.log('⚠️ Registered fallback notification routes (503)');
-}
+router.use('/admin/notifications', notificationRoutes);
 
 export default router;

@@ -12,7 +12,6 @@ import routes from '@routes';
 import webhookRoutes from '@modules/webhooks/http/webhook.routes';
 import swaggerUi from 'swagger-ui-express';
 import openapiSpec from '@config/swagger';
-import NotificationModule from '@modules/notifications';
 import RedisClient from '@config/redis';
 
 import { env, isProd } from '@config/env';
@@ -40,29 +39,17 @@ const app = express();
 (async () => {
   try {
     await connectDB();
-
     console.log('✅ Database connected');
-    // Инициализация Redis и NotificationModule
+
+    // Инициализация Redis
     try {
       console.log('🔌 Connecting to Redis...');
       const redisClient = RedisClient.getInstance();
       await redisClient.ping(); // Проверка подключения
       console.log('✅ Redis connected');
-
-      // Инициализация модуля уведомлений
-      const db = getDB();
-      const { SmsService } = require('@modules/sms/application/sms.service');
-      const { SmsMongoRepository } = require('@modules/sms/infrastructure/sms.mongo.repository');
-      const smsRepository = new SmsMongoRepository(db);
-      const smsService = new SmsService(smsRepository);
-
-      const notificationModule = NotificationModule.getInstance();
-      await notificationModule.initialize(db, smsService);
-      
-      console.log('✅ Notification system initialized');
     } catch (redisErr) {
-      console.error('⚠️ Redis/Notifications initialization failed:', redisErr);
-      console.log('⚠️ Server will start without notification system');
+      console.error('⚠️ Redis initialization failed:', redisErr);
+      console.log('⚠️ Server will start without Redis-dependent features');
     }
   } catch (err) {
     console.error('❌ Initial DB connection failed:', err);
@@ -256,22 +243,14 @@ const server = app.listen(PORT, () => {
 const gracefulShutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
   
-  // 1. Закрываем NotificationModule (очереди Bull)
-  try {
-    const notificationModule = NotificationModule.getInstance();
-    await notificationModule.shutdown();
-  } catch (err) {
-    console.error('Error shutting down NotificationModule:', err);
-  }
-
-  // 2. Закрываем Redis
+  // 1. Закрываем Redis
   try {
     await RedisClient.close();
   } catch (err) {
     console.error('Error closing Redis:', err);
   }
 
-  // 3. Закрываем HTTP сервер
+  // 2. Закрываем HTTP сервер
   server.close(err => {
     if (err) {
       console.error('Error during server close:', err);
@@ -286,7 +265,7 @@ const gracefulShutdown = async (signal: string) => {
   setTimeout(() => {
     console.warn('Force exiting after timeout');
     process.exit(1);
-  }, 15_000).unref(); // Увеличили таймаут для корректного завершения очередей
+  }, 10_000).unref();
 };
 
 ['SIGINT', 'SIGTERM'].forEach(sig => {

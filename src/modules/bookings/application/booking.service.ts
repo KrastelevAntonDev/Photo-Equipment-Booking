@@ -167,11 +167,16 @@ export class BookingService {
 
 		// === Планирование уведомлений для нового бронирования ===
 		try {
-			const NotificationModule = require('@modules/notifications').default;
+			const { getDB } = require('@/config/database');
+			const { NotificationService } = require('@modules/notifications/application/notification.service');
+			const { NotificationMongoRepository } = require('@modules/notifications/infrastructure/notification.mongo.repository');
+			const { SmsService } = require('@modules/sms/application/sms.service');
 			const { BookingNotificationScheduler } = require('./booking-notification.scheduler');
 			
-			const notificationModule = NotificationModule.getInstance();
-			const notificationService = notificationModule.getService();
+			const db = getDB();
+			const notificationRepository = new NotificationMongoRepository(db);
+			const smsService = new SmsService();
+			const notificationService = new NotificationService(notificationRepository, smsService);
 			const scheduler = new BookingNotificationScheduler(notificationService);
 
 			// Собираем данные для шаблона

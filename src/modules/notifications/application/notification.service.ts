@@ -230,6 +230,10 @@ export class NotificationService {
    * Отменить все уведомления для бронирования
    */
   async cancelNotifications(bookingId: ObjectId): Promise<number> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
     // Отменяем в базе данных
     const cancelled = await this.notificationRepository.cancelByBookingId(bookingId);
 
@@ -251,6 +255,10 @@ export class NotificationService {
    * Получить статистику очередей
    */
   async getQueueStats(): Promise<Record<string, any>> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
     const stats: Record<string, any> = {};
 
     for (const [type, queue] of this.queues.entries()) {
