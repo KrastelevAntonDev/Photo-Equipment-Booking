@@ -36,9 +36,22 @@ router.use(uploadRoutes);
 // Notification routes (admin only)
 try {
   const notificationModule = NotificationModule.getInstance();
-  router.use('/admin/notifications', notificationModule.getRoutes());
+  const notificationRoutes = notificationModule.getRoutes();
+  router.use('/admin/notifications', notificationRoutes);
+  console.log('✅ Notification routes registered at /admin/notifications');
 } catch (err) {
-  console.warn('⚠️ NotificationModule routes not available:', err);
+  console.error('❌ Failed to register NotificationModule routes:', err);
+  // Регистрируем fallback роуты, которые возвращают 503
+  const fallbackRouter = Router();
+  fallbackRouter.all('*', (_req, res) => {
+    res.status(503).json({
+      success: false,
+      error: 'Notification system not initialized',
+      details: 'Please check server logs for initialization errors'
+    });
+  });
+  router.use('/admin/notifications', fallbackRouter);
+  console.log('⚠️ Registered fallback notification routes (503)');
 }
 
 export default router;

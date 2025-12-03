@@ -85,8 +85,11 @@ class NotificationModule {
    * Получить роуты
    */
   getRoutes(): Router {
+    console.log('📋 NotificationModule.getRoutes() called, isInitialized:', this.isInitialized);
     const controller = this.getController();
-    return createNotificationRoutes(controller);
+    const routes = createNotificationRoutes(controller);
+    console.log('✅ Notification routes created successfully');
+    return routes;
   }
 
   /**
