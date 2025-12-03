@@ -13,9 +13,13 @@ export class RoomService {
 
   async getAllRooms(): Promise<Room[]> {
     const rooms = await this.roomRepository.findAll();
-    // Дополнительно подставляем URLs всех файлов из /public/uploads/rooms/<name>
+    // Если images уже установлены в базе (админ задал порядок), используем их
+    // Иначе подставляем URLs всех файлов из /public/uploads/rooms/<name>
     const withImages = await Promise.all(
       rooms.map(async (room) => {
+        if (room.images && room.images.length > 0) {
+          return room;
+        }
         const images = await this.getRoomImageUrls(room.name);
         return { ...room, images } as Room;
       })
@@ -27,6 +31,9 @@ export class RoomService {
     const rooms = await this.roomRepository.findAllIncludingDeleted();
     const withImages = await Promise.all(
       rooms.map(async (room) => {
+        if (room.images && room.images.length > 0) {
+          return room;
+        }
         const images = await this.getRoomImageUrls(room.name);
         return { ...room, images } as Room;
       })
@@ -51,6 +58,11 @@ export class RoomService {
     if (!room) {
       return null;
     }
+    // Если images уже установлены в базе (админ задал порядок), используем их
+    if (room.images && room.images.length > 0) {
+      return room;
+    }
+    // Иначе загружаем из файловой системы
     const images = await this.getRoomImageUrls(room.name);
     return { ...room, images } as Room;
   }

@@ -52,8 +52,9 @@ export class EquipmentController {
       if (!updated) {
         return res.status(404).json({ message: 'Equipment not found' });
       }
-      const withImages = await this.equipmentService.getEquipmentById(id);
-      res.json(withImages);
+      // Получаем обновленное оборудование (с images из базы или из ФС)
+      const result = await this.equipmentService.getEquipmentById(id);
+      res.json(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       res.status(500).json({ message: errorMessage });

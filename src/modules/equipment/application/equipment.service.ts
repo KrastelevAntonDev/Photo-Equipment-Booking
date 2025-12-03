@@ -15,6 +15,9 @@ export class EquipmentService {
     const list = await this.equipmentRepository.findAll();
     const withImages = await Promise.all(
       list.map(async (item) => {
+        if (item.images && item.images.length > 0) {
+          return item;
+        }
         const images = await this.getEquipmentImageUrls(item.name);
         return { ...item, images } as Equipment & { images?: string[] };
       })
@@ -26,6 +29,9 @@ export class EquipmentService {
     const list = await this.equipmentRepository.findAllIncludingDeleted();
     const withImages = await Promise.all(
       list.map(async (item) => {
+        if (item.images && item.images.length > 0) {
+          return item;
+        }
         const images = await this.getEquipmentImageUrls(item.name);
         return { ...item, images } as Equipment & { images?: string[] };
       })
@@ -48,6 +54,11 @@ export class EquipmentService {
   async getEquipmentById(id: string): Promise<Equipment | null> {
     const eq = await this.equipmentRepository.findById(id);
     if (!eq) return null;
+    // Если images уже установлены в базе (админ задал порядок), используем их
+    if (eq.images && eq.images.length > 0) {
+      return eq;
+    }
+    // Иначе загружаем из файловой системы
     const images = await this.getEquipmentImageUrls(eq.name);
     return { ...eq, images } as Equipment & { images?: string[] };
   }

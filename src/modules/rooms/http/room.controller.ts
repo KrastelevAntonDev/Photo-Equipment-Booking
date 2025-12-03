@@ -52,9 +52,9 @@ export class RoomController {
       if (!updated) {
         return res.status(404).json({ message: 'Room not found' });
       }
-      // Обогащаем изображениями, как и в getRoomById
-      const withImages = await this.roomService.getRoomById(id);
-      res.json(withImages);
+      // Получаем обновленную комнату (с images из базы или из ФС)
+      const result = await this.roomService.getRoomById(id);
+      res.json(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       res.status(500).json({ message: errorMessage });
