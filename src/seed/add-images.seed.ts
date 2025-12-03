@@ -33,8 +33,19 @@ async function scanImagesInFolder(folderPath: string): Promise<string[]> {
 
 // Получение изображений для комнаты из файловой системы
 async function getRoomImagesFromFS(roomName: string): Promise<string[]> {
-  const projectRoot = path.join(__dirname, '..', '..');
-  const uploadsBase = path.join(projectRoot, 'public', 'uploads', 'rooms');
+  // В Docker: /app/dist/public/uploads/
+  // Локально: путь от dist или src
+  const isProduction = process.env.NODE_ENV === 'production';
+  let uploadsBase: string;
+  
+  if (isProduction) {
+    // В продакшене путь от /app/dist
+    uploadsBase = '/app/dist/public/uploads/rooms';
+  } else {
+    // Локально от dist или src
+    const projectRoot = path.join(__dirname, '..', '..');
+    uploadsBase = path.join(projectRoot, 'public', 'uploads', 'rooms');
+  }
 
   if (!fs.existsSync(uploadsBase)) {
     console.warn(`⚠️  Папка uploads не найдена: ${uploadsBase}`);
@@ -64,8 +75,19 @@ async function getRoomImagesFromFS(roomName: string): Promise<string[]> {
 
 // Получение изображений для оборудования из файловой системы
 async function getEquipmentImagesFromFS(equipmentName: string): Promise<string[]> {
-  const projectRoot = path.join(__dirname, '..', '..');
-  const uploadsBase = path.join(projectRoot, 'public', 'uploads', 'equipment');
+  // В Docker: /app/dist/public/uploads/
+  // Локально: путь от dist или src
+  const isProduction = process.env.NODE_ENV === 'production';
+  let uploadsBase: string;
+  
+  if (isProduction) {
+    // В продакшене путь от /app/dist
+    uploadsBase = '/app/dist/public/uploads/equipment';
+  } else {
+    // Локально от dist или src
+    const projectRoot = path.join(__dirname, '..', '..');
+    uploadsBase = path.join(projectRoot, 'public', 'uploads', 'equipment');
+  }
 
   if (!fs.existsSync(uploadsBase)) {
     console.warn(`⚠️  Папка uploads не найдена: ${uploadsBase}`);
