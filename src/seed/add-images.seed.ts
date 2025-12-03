@@ -1,278 +1,213 @@
 import { connectDB } from '@config/database';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
+import fs from 'fs';
+import path from 'path';
 
-// Конфигурация изображений для залов
-const roomImages: Record<string, string[]> = {
-  'АВАНГАРД': [
-    '/public/uploads/rooms/avangard_1.jpg',
-    '/public/uploads/rooms/avangard_2.jpg',
-    '/public/uploads/rooms/avangard_3.jpg',
-  ],
-  'АФРОДИТА': [
-    '/public/uploads/rooms/afrodita_1.jpg',
-    '/public/uploads/rooms/afrodita_2.jpg',
-    '/public/uploads/rooms/afrodita_3.jpg',
-  ],
-  'БИСТРО': [
-    '/public/uploads/rooms/bistro_1.jpg',
-    '/public/uploads/rooms/bistro_2.jpg',
-  ],
-  '2 ЛИКА': [
-    '/public/uploads/rooms/2lika_1.jpg',
-    '/public/uploads/rooms/2lika_2.jpg',
-  ],
-  'КРИПТОН': [
-    '/public/uploads/rooms/krypton_1.jpg',
-    '/public/uploads/rooms/krypton_2.jpg',
-  ],
-  'ЛОФТ РУМ': [
-    '/public/uploads/rooms/loft_room_1.jpg',
-    '/public/uploads/rooms/loft_room_2.jpg',
-    '/public/uploads/rooms/loft_room_3.jpg',
-  ],
-  'МАНУФАКТУРА': [
-    '/public/uploads/rooms/manufaktura_1.jpg',
-    '/public/uploads/rooms/manufaktura_2.jpg',
-  ],
-  'МУЛЕН РУЖ': [
-    '/public/uploads/rooms/moulin_rouge_1.jpg',
-    '/public/uploads/rooms/moulin_rouge_2.jpg',
-  ],
-  'НЬЮ-ЙОРК': [
-    '/public/uploads/rooms/new_york_1.jpg',
-    '/public/uploads/rooms/new_york_2.jpg',
-  ],
-  'ОДИССЕЙ': [
-    '/public/uploads/rooms/odyssey_1.jpg',
-    '/public/uploads/rooms/odyssey_2.jpg',
-  ],
-  'ПАЛАЦЦО': [
-    '/public/uploads/rooms/palazzo_1.jpg',
-    '/public/uploads/rooms/palazzo_2.jpg',
-  ],
-  'ПАНОРАМА': [
-    '/public/uploads/rooms/panorama_1.jpg',
-    '/public/uploads/rooms/panorama_2.jpg',
-  ],
-  'ПРОВАНС': [
-    '/public/uploads/rooms/provence_1.jpg',
-    '/public/uploads/rooms/provence_2.jpg',
-  ],
-  'САВОЙЯ': [
-    '/public/uploads/rooms/savoy_1.jpg',
-    '/public/uploads/rooms/savoy_2.jpg',
-  ],
-  'СКАНДИНАВИЯ': [
-    '/public/uploads/rooms/scandinavia_1.jpg',
-    '/public/uploads/rooms/scandinavia_2.jpg',
-  ],
-  'СОУЛ': [
-    '/public/uploads/rooms/soul_1.jpg',
-    '/public/uploads/rooms/soul_2.jpg',
-  ],
-  'СТУДИЯ 33': [
-    '/public/uploads/rooms/studio33_1.jpg',
-    '/public/uploads/rooms/studio33_2.jpg',
-  ],
-  'ТЕХНОЛАБ': [
-    '/public/uploads/rooms/technolab_1.jpg',
-    '/public/uploads/rooms/technolab_2.jpg',
-  ],
-  'УРБАН ХОЛЛ': [
-    '/public/uploads/rooms/urban_hall_1.jpg',
-    '/public/uploads/rooms/urban_hall_2.jpg',
-  ],
-  'ЦИКЛОРАМА': [
-    '/public/uploads/rooms/cyclorama_1.jpg',
-    '/public/uploads/rooms/cyclorama_2.jpg',
-  ],
-  'ШАЛЕ': [
-    '/public/uploads/rooms/chalet_1.jpg',
-    '/public/uploads/rooms/chalet_2.jpg',
-  ],
-  'ЭДЕМ': [
-    '/public/uploads/rooms/eden_1.jpg',
-    '/public/uploads/rooms/eden_2.jpg',
-  ],
-  'ОАЗИС': [
-    '/public/uploads/rooms/oasis_1.jpg',
-    '/public/uploads/rooms/oasis_2.jpg',
-  ],
-  'ОСТЕРИЯ': [
-    '/public/uploads/rooms/osteria_1.jpg',
-    '/public/uploads/rooms/osteria_2.jpg',
-  ],
-  'ПОДКАСТНАЯ': [
-    '/public/uploads/rooms/podcastnaya_1.jpg',
-    '/public/uploads/rooms/podcastnaya_2.jpg',
-  ],
-  'ПЬЕР': [
-    '/public/uploads/rooms/pierre_1.jpg',
-    '/public/uploads/rooms/pierre_2.jpg',
-  ],
-  'РАЙ': [
-    '/public/uploads/rooms/paradise_1.jpg',
-    '/public/uploads/rooms/paradise_2.jpg',
-  ],
-  'САТУРН': [
-    '/public/uploads/rooms/saturn_1.jpg',
-    '/public/uploads/rooms/saturn_2.jpg',
-  ],
-  'АМСТЕРДАМ': [
-    '/public/uploads/rooms/amsterdam_1.jpg',
-    '/public/uploads/rooms/amsterdam_2.jpg',
-  ],
-  'ЛОНДОН': [
-    '/public/uploads/rooms/london_1.jpg',
-    '/public/uploads/rooms/london_2.jpg',
-  ],
-  'МАРАКЕШ': [
-    '/public/uploads/rooms/marrakech_1.jpg',
-    '/public/uploads/rooms/marrakech_2.jpg',
-  ],
-  'МАРРАКЕШ': [
-    '/public/uploads/rooms/marrakech_1.jpg',
-    '/public/uploads/rooms/marrakech_2.jpg',
-  ],
-  'САНТОРИНИ': [
-    '/public/uploads/rooms/santorini_1.jpg',
-    '/public/uploads/rooms/santorini_2.jpg',
-  ],
-  'СИЦИЛИЯ': [
-    '/public/uploads/rooms/sicily_1.jpg',
-    '/public/uploads/rooms/sicily_2.jpg',
-  ],
-  'БРУКЛИН': [
-    '/public/uploads/rooms/brooklyn_1.jpg',
-    '/public/uploads/rooms/brooklyn_2.jpg',
-  ],
-  'ХРОМ': [
-    '/public/uploads/rooms/chrome_1.jpg',
-    '/public/uploads/rooms/chrome_2.jpg',
-  ],
-  'ЗАЛ ЧАЙКОВСКИЙ': [
-    '/public/uploads/rooms/tchaikovsky_hall_1.jpg',
-    '/public/uploads/rooms/tchaikovsky_hall_2.jpg',
-    '/public/uploads/rooms/tchaikovsky_hall_3.jpg',
-  ],
-  'НИАГАРА': [
-    '/public/uploads/rooms/niagara_1.jpg',
-    '/public/uploads/rooms/niagara_2.jpg',
-  ],
-  'ДИОД': [
-    '/public/uploads/rooms/diod_1.jpg',
-    '/public/uploads/rooms/diod_2.jpg',
-  ],
-  'КИОТО': [
-    '/public/uploads/rooms/kyoto_1.jpg',
-    '/public/uploads/rooms/kyoto_2.jpg',
-  ],
-  'ШАНХАЙ': [
-    '/public/uploads/rooms/shanghai_1.jpg',
-    '/public/uploads/rooms/shanghai_2.jpg',
-  ],
-};
+// Нормализация имени для сравнения
+function normalize(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '_');
+}
 
-// Конфигурация изображений для оборудования
-const equipmentImages: Record<string, string> = {
-  // Освещение
-  'Profoto D2': '/public/uploads/equipment/profoto_d2.jpg',
-  'Godox SL-60W': '/public/uploads/equipment/godox_sl60w.jpg',
-  'Aputure 300d II': '/public/uploads/equipment/aputure_300d.jpg',
-  'Софтбокс': '/public/uploads/equipment/softbox.jpg',
-  'Октобокс': '/public/uploads/equipment/octobox.jpg',
-  'Рефлектор': '/public/uploads/equipment/reflector.jpg',
+// Сканирование файлов в папке
+async function scanImagesInFolder(folderPath: string): Promise<string[]> {
+  if (!fs.existsSync(folderPath)) {
+    return [];
+  }
+
+  const files: string[] = [];
+  const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (entry.isFile()) {
+      // Проверяем что это изображение
+      const ext = path.extname(entry.name).toLowerCase();
+      if (['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) {
+        files.push(entry.name);
+      }
+    }
+  }
+
+  return files.sort(); // Сортируем по имени файла
+}
+
+// Получение изображений для комнаты из файловой системы
+async function getRoomImagesFromFS(roomName: string): Promise<string[]> {
+  const projectRoot = path.join(__dirname, '..', '..');
+  const uploadsBase = path.join(projectRoot, 'public', 'uploads', 'rooms');
+
+  if (!fs.existsSync(uploadsBase)) {
+    console.warn(`⚠️  Папка uploads не найдена: ${uploadsBase}`);
+    return [];
+  }
+
+  const normalizedTarget = normalize(roomName);
+  const baseEntries = await fs.promises.readdir(uploadsBase, { withFileTypes: true });
+
+  // Ищем папку которая соответствует имени комнаты
+  const matchedDir = baseEntries.find(e => 
+    e.isDirectory() && normalize(e.name) === normalizedTarget
+  );
+
+  if (!matchedDir) {
+    return [];
+  }
+
+  const roomDir = path.join(uploadsBase, matchedDir.name);
+  const files = await scanImagesInFolder(roomDir);
+
+  // Формируем URL в правильном формате
+  return files.map(file => 
+    `/public/uploads/rooms/${encodeURIComponent(matchedDir.name)}/${encodeURIComponent(file)}`
+  );
+}
+
+// Получение изображений для оборудования из файловой системы
+async function getEquipmentImagesFromFS(equipmentName: string): Promise<string[]> {
+  const projectRoot = path.join(__dirname, '..', '..');
+  const uploadsBase = path.join(projectRoot, 'public', 'uploads', 'equipment');
+
+  if (!fs.existsSync(uploadsBase)) {
+    console.warn(`⚠️  Папка uploads не найдена: ${uploadsBase}`);
+    return [];
+  }
+
+  const normalizedTarget = normalize(equipmentName);
+  const baseEntries = await fs.promises.readdir(uploadsBase, { withFileTypes: true });
+
+  // Ищем папку которая соответствует имени оборудования
+  const matchedDir = baseEntries.find(e => 
+    e.isDirectory() && normalize(e.name) === normalizedTarget
+  );
+
+  if (!matchedDir) {
+    return [];
+  }
+
+  const eqDir = path.join(uploadsBase, matchedDir.name);
+  const files = await scanImagesInFolder(eqDir);
+
+  // Формируем URL в правильном формате
+  return files.map(file => 
+    `/public/uploads/equipment/${encodeURIComponent(matchedDir.name)}/${encodeURIComponent(file)}`
+  );
+}
+
+// Проверка что URL валиден (есть папка с именем сущности)
+function isValidImageUrl(url: string, entityName: string, type: 'room' | 'equipment'): boolean {
+  const pattern = type === 'room' 
+    ? /\/public\/uploads\/rooms\/([^/]+)\/(.+)$/
+    : /\/public\/uploads\/equipment\/([^/]+)\/(.+)$/;
   
-  // Камеры и объективы
-  'Sony A7 III': '/public/uploads/equipment/sony_a7iii.jpg',
-  'Canon EOS R5': '/public/uploads/equipment/canon_r5.jpg',
-  'Объектив 50mm f/1.4': '/public/uploads/equipment/lens_50mm.jpg',
-  'Объектив 85mm f/1.8': '/public/uploads/equipment/lens_85mm.jpg',
+  const match = url.match(pattern);
+  if (!match) return false;
+
+  const [, folderName] = match;
+  const decodedFolder = decodeURIComponent(folderName);
   
-  // Стабилизация
-  'Стедикам': '/public/uploads/equipment/steadicam.jpg',
-  'Штатив Manfrotto': '/public/uploads/equipment/tripod_manfrotto.jpg',
-  'Слайдер': '/public/uploads/equipment/slider.jpg',
-  
-  // Аудио
-  'Микрофон Rode': '/public/uploads/equipment/rode_mic.jpg',
-  'Петличка': '/public/uploads/equipment/lavalier_mic.jpg',
-  
-  // Фоны и реквизит
-  'Бумажный фон': '/public/uploads/equipment/paper_backdrop.jpg',
-  'Тканевый фон': '/public/uploads/equipment/fabric_backdrop.jpg',
-};
+  // Проверяем что имя папки соответствует имени сущности
+  return normalize(decodedFolder) === normalize(entityName);
+}
 
 async function addImagesToRooms() {
   const roomRepository = new RoomMongoRepository();
   
-  console.log('🖼️  Добавление изображений в залы...');
+  console.log('🖼️  Обработка изображений залов...\n');
   
-  const rooms = await roomRepository.findAll();
+  const rooms = await roomRepository.findAllIncludingDeleted();
   let updatedCount = 0;
+  let cleanedCount = 0;
   
   for (const room of rooms) {
     const roomName = room.name.trim();
-    const images = roomImages[roomName];
+    const roomId = room._id!.toString();
     
-    if (images && images.length > 0) {
-      // Обновляем только если изображений нет или массив пустой
-      if (!room.images || room.images.length === 0) {
-        await roomRepository.updateRoom(room._id!.toString(), { images });
-        console.log(`✅ ${roomName}: добавлено ${images.length} изображений`);
-        updatedCount++;
-      } else {
-        console.log(`⏭️  ${roomName}: уже есть изображения (${room.images.length})`);
+    // 1. Удаляем битые URL (без правильной структуры папок)
+    if (room.images && room.images.length > 0) {
+      const validImages = room.images.filter(url => isValidImageUrl(url, roomName, 'room'));
+      const invalidCount = room.images.length - validImages.length;
+      
+      if (invalidCount > 0) {
+        console.log(`🧹 ${roomName}: удалено ${invalidCount} битых URL`);
+        await roomRepository.updateRoom(roomId, { images: validImages });
+        cleanedCount++;
       }
+    }
+    
+    // 2. Сканируем реальные файлы из папки
+    const fsImages = await getRoomImagesFromFS(roomName);
+    
+    if (fsImages.length > 0) {
+      // Обновляем images из файловой системы
+      await roomRepository.updateRoom(roomId, { images: fsImages });
+      console.log(`✅ ${roomName}: установлено ${fsImages.length} изображений из ФС`);
+      updatedCount++;
     } else {
-      console.log(`⚠️  ${roomName}: нет конфигурации изображений`);
+      // Если папки нет - очищаем images
+      await roomRepository.updateRoom(roomId, { images: [] });
+      console.log(`⚠️  ${roomName}: папка не найдена, images очищен`);
     }
   }
   
   console.log(`\n✨ Обновлено залов: ${updatedCount}/${rooms.length}`);
+  console.log(`🧹 Очищено битых URL: ${cleanedCount}`);
 }
 
 async function addImagesToEquipment() {
   const equipmentRepository = new EquipmentMongoRepository();
   
-  console.log('\n🖼️  Добавление изображений в оборудование...');
+  console.log('\n🖼️  Обработка изображений оборудования...\n');
   
-  const equipment = await equipmentRepository.findAll();
+  const equipment = await equipmentRepository.findAllIncludingDeleted();
   let updatedCount = 0;
+  let cleanedCount = 0;
   
   for (const item of equipment) {
     const itemName = item.name.trim();
-    const image = equipmentImages[itemName];
+    const itemId = item._id!.toString();
     
-    if (image) {
-      // Обновляем только если изображения нет
-      if (!item.image) {
-        await equipmentRepository.updateEquipment(item._id!.toString(), { image });
-        console.log(`✅ ${itemName}: добавлено изображение`);
-        updatedCount++;
-      } else {
-        console.log(`⏭️  ${itemName}: уже есть изображение`);
-      }
-    } else {
-      // Пробуем найти по частичному совпадению
-      const matchedKey = Object.keys(equipmentImages).find(key => 
-        itemName.toLowerCase().includes(key.toLowerCase()) || 
-        key.toLowerCase().includes(itemName.toLowerCase())
-      );
+    // 1. Проверяем и удаляем битый URL (если есть старое поле image)
+    if (item.image && !isValidImageUrl(item.image, itemName, 'equipment')) {
+      console.log(`🧹 ${itemName}: удален битый URL из поля image`);
+      await equipmentRepository.updateEquipment(itemId, { image: '' });
+      cleanedCount++;
+    }
+    
+    // 2. Проверяем и чистим массив images (если есть)
+    if (item.images && item.images.length > 0) {
+      const validImages = item.images.filter(url => isValidImageUrl(url, itemName, 'equipment'));
+      const invalidCount = item.images.length - validImages.length;
       
-      if (matchedKey && !item.image) {
-        const matchedImage = equipmentImages[matchedKey];
-        await equipmentRepository.updateEquipment(item._id!.toString(), { image: matchedImage });
-        console.log(`✅ ${itemName}: добавлено изображение (по совпадению с "${matchedKey}")`);
-        updatedCount++;
-      } else {
-        console.log(`⚠️  ${itemName}: нет конфигурации изображения`);
+      if (invalidCount > 0) {
+        console.log(`🧹 ${itemName}: удалено ${invalidCount} битых URL из images`);
+        await equipmentRepository.updateEquipment(itemId, { images: validImages });
+        cleanedCount++;
       }
+    }
+    
+    // 3. Сканируем реальные файлы из папки
+    const fsImages = await getEquipmentImagesFromFS(itemName);
+    
+    if (fsImages.length > 0) {
+      // Устанавливаем первую картинку в image, все в images
+      await equipmentRepository.updateEquipment(itemId, { 
+        image: fsImages[0],
+        images: fsImages 
+      });
+      console.log(`✅ ${itemName}: установлено ${fsImages.length} изображений из ФС`);
+      updatedCount++;
+    } else {
+      // Если папки нет - очищаем
+      await equipmentRepository.updateEquipment(itemId, { 
+        image: '',
+        images: [] 
+      });
+      console.log(`⚠️  ${itemName}: папка не найдена, images очищен`);
     }
   }
   
   console.log(`\n✨ Обновлено оборудования: ${updatedCount}/${equipment.length}`);
+  console.log(`🧹 Очищено битых URL: ${cleanedCount}`);
 }
 
 async function add_image() {
