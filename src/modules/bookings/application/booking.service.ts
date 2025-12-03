@@ -594,7 +594,11 @@ export class BookingService {
 
 	private resolveRoomRate(room: any, dt: Date): number {
 		const pricing = room.pricing || {};
-		const isWeekendOrHoliday = this.isWeekend(dt) || this.isHoliday(dt);
+		// Приводим время к бизнес-часовому поясу, чтобы правильно подбирать тарифы.
+		// Например, для Москвы используем смещение +3 часа.
+		const offsetHours = Number(3);
+		const localDt = new Date(dt.getTime() + offsetHours * 3600_000);
+		const isWeekendOrHoliday = this.isWeekend(localDt) || this.isHoliday(localDt);
 
 		const pickRate = (...rates: Array<number | undefined>): number => {
 			for (const rate of rates) {
@@ -614,7 +618,7 @@ export class BookingService {
 			);
 		}
 
-		const hour = dt.getHours();
+		const hour = localDt.getHours();
 		const isMorning = hour < 12;
 
 		return pickRate(
