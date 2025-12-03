@@ -43,7 +43,8 @@ try {
   console.error('❌ Failed to register NotificationModule routes:', err);
   // Регистрируем fallback роуты, которые возвращают 503
   const fallbackRouter = Router();
-  fallbackRouter.all('*', (_req, res) => {
+  // В Express 5 path-to-regexp не принимает '*' без имени параметра — используем без пути
+  fallbackRouter.use((_req, res) => {
     res.status(503).json({
       success: false,
       error: 'Notification system not initialized',
