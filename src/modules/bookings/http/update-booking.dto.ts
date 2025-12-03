@@ -4,11 +4,11 @@ import { Type } from 'class-transformer';
 export class BookingEquipmentDTO {
   @IsString()
   @IsNotEmpty()
-  equipmentId: string;
+  equipmentId!: string;
 
   @IsNumber()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class UpdateBookingDTO {
