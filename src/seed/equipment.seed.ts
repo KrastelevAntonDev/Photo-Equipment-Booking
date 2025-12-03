@@ -72,7 +72,7 @@ export async function seedEquipment() {
     const equipment: Equipment = {
       name,
       description: descriptionParts.join('\n'),
-      pricePerHour: computePricePerHour(row),
+      pricePerDay: computePricePerHour(row),
       image: normalizeStr(row['ССЫЛКА НА ФОТО']) || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -81,7 +81,7 @@ export async function seedEquipment() {
 
     await repo.createEquipment(equipment);
     created++;
-    console.log(`[seedEquipment] Created: ${name} (${equipment.pricePerHour}/час)`);
+    console.log(`[seedEquipment] Created: ${name} (${equipment.pricePerDay}/сутки)`);
   }
 
   console.log(`[seedEquipment] Done. Created ${created} items.`);

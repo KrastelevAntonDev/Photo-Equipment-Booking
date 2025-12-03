@@ -494,16 +494,16 @@ export class BookingService {
 			}
 		}
 
-		// Рассчитываем стоимость оборудования с учетом количества
-		let equipmentSum = 0;
+		// Рассчитываем стоимость оборудования: цена за сутки * quantity (НЕ зависит от длительности)
+		let equipmentTotalPrice = 0;
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
-			equipmentSum += eq.pricePerHour * item.quantity;
+			equipmentTotalPrice += eq.pricePerDay * item.quantity;
 		}
 
-		// Итерация по часовым сегментам (с учётом неполных часов)
-		let total = 0;
+		// Итерация по часовым сегментам для расчёта стоимости зала (только зал зависит от длительности)
+		let roomTotalPrice = 0;
 		let cursor = new Date(startDate);
 		while (cursor < endDate) {
 			const nextHour = new Date(cursor);
@@ -513,11 +513,13 @@ export class BookingService {
 			const segmentHours = (segmentEnd.getTime() - cursor.getTime()) / 36e5;
 
 			const roomRate = this.resolveRoomRate(room, cursor);
-			total += (roomRate + equipmentSum) * segmentHours;
+			roomTotalPrice += roomRate * segmentHours;
 
 			cursor = segmentEnd;
 		}
 
+		// Итоговая цена = стоимость зала (зависит от времени) + стоимость оборудования (фиксированная)
+		const total = roomTotalPrice + equipmentTotalPrice;
 		return Math.round(total * 100) / 100;
 	}
 
@@ -551,15 +553,16 @@ export class BookingService {
 			}
 		}
 
-		let equipmentSum = 0;
+		// Стоимость оборудования (фиксированная за сутки, НЕ зависит от длительности)
+		let equipmentTotalPrice = 0;
 		for (const eqId of equipmentIds) {
 			const eq = await this.equipmentRepository.findById(eqId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${eqId}`);
-			equipmentSum += eq.pricePerHour;
+			equipmentTotalPrice += eq.pricePerDay;
 		}
 
-		// Итерация по часовым сегментам (с учётом неполных часов)
-		let total = 0;
+		// Итерация по часовым сегментам для расчёта стоимости зала (только зал зависит от длительности)
+		let roomTotalPrice = 0;
 		let cursor = new Date(startDate);
 		while (cursor < endDate) {
 			const nextHour = new Date(cursor);
@@ -569,11 +572,13 @@ export class BookingService {
 			const segmentHours = (segmentEnd.getTime() - cursor.getTime()) / 36e5;
 
 			const roomRate = this.resolveRoomRate(room, cursor);
-			total += (roomRate + equipmentSum) * segmentHours;
+			roomTotalPrice += roomRate * segmentHours;
 
 			cursor = segmentEnd;
 		}
 
+		// Итоговая цена = стоимость зала + стоимость оборудования (фиксированная за сутки)
+		const total = roomTotalPrice + equipmentTotalPrice;
 		return Math.round(total * 100) / 100;
 	}
 

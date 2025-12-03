@@ -11,7 +11,7 @@ export class UpdateEquipmentDTO {
 
   @IsNumber()
   @IsOptional()
-  pricePerHour?: number;
+  pricePerDay?: number;
 
   @IsString()
   @IsOptional()

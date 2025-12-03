@@ -527,7 +527,7 @@ function buildEquipmentOffer(
     ) => void;
   },
 ): OfferBuildResult {
-  const price = resolvePrice([item.pricePerHour], item.description);
+  const price = resolvePrice([item.pricePerDay], item.description);
   if (price === null || price <= 0) {
     return { reason: 'no-price' };
   }

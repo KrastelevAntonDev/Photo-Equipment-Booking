@@ -5,7 +5,7 @@ export interface Equipment {
   _id?: ObjectId;                 // появится после insertOne
   name: string;
   description?: string;
-  pricePerHour: number;
+  pricePerDay: number;            // цена за сутки (24 часа), независимо от длительности бронирования
   image?: string;
   images?: string[];              // массив изображений с возможностью указания порядка
   totalQuantity?: number;         // Общее количество единиц оборудования

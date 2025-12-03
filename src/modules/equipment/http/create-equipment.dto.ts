@@ -10,7 +10,7 @@ export class CreateEquipmentDTO {
   description?: string;
 
   @IsNumber()
-  pricePerHour: number;
+  pricePerDay: number;
 
   @IsString()
   @IsOptional()
@@ -24,13 +24,13 @@ export class CreateEquipmentDTO {
 	constructor(
 		name: string,
 		description: string,
-		pricePerHour: number,
+		pricePerDay: number,
 		image: string,
 		totalQuantity?: number
 	) {
 		this.name = name;
 		this.description = description;
-		this.pricePerHour = pricePerHour;
+		this.pricePerDay = pricePerDay;
 		this.image = image;
 		this.totalQuantity = totalQuantity;
 	}
