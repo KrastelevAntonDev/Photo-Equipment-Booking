@@ -2,11 +2,17 @@ import { ObjectId } from 'mongodb';
 import { UserJwtPayload } from '../../users/domain/user.entity';
 	
 
+export interface BookingEquipment {
+  equipmentId: ObjectId;                          // ID оборудования
+  quantity: number;                               // количество единиц
+}
+
 export interface Booking {
   _id?: ObjectId;                                 // появится после insertOne
   userId: ObjectId;                               // кто бронировал
   roomId: ObjectId;                               // какой зал
-  equipmentIds?: ObjectId[];                      // оборудование (если есть)
+  equipmentIds?: ObjectId[];                      // оборудование (старый формат для совместимости)
+  equipment?: BookingEquipment[];                 // оборудование с количеством (новый формат)
   start: Date;                                    // дата-время начала брони
   end: Date;                                      // дата-время окончания брони
   status: "pending" | "confirmed" | "cancelled" | "completed"; // статусы брони

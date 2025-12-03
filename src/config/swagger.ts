@@ -75,13 +75,26 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           fullName: { type: 'string', description: 'ФИО пользователя' },
         },
       },
+      BookingEquipment: {
+        type: 'object',
+        required: ['equipmentId', 'quantity'],
+        properties: {
+          equipmentId: { type: 'string', description: 'ID оборудования (ObjectId)' },
+          quantity: { type: 'number', minimum: 1, description: 'Количество единиц оборудования' },
+        },
+      },
       Booking: {
         type: 'object',
         properties: {
           _id: { type: 'string' },
           userId: { type: 'string' },
           roomId: { type: 'string' },
-          equipmentIds: { type: 'array', items: { type: 'string' } },
+          equipmentIds: { type: 'array', items: { type: 'string' }, description: 'Устаревший формат: список ID оборудования без количества' },
+          equipment: { 
+            type: 'array', 
+            items: { $ref: '#/components/schemas/BookingEquipment' },
+            description: 'Новый формат: оборудование с указанием количества'
+          },
           start: { type: 'string', format: 'date-time' },
           end: { type: 'string', format: 'date-time' },
           status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
@@ -123,24 +136,44 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         type: 'object',
         required: ['roomId', 'start', 'end'],
         properties: {
-          roomId: { type: 'string' },
-          equipmentIds: { type: 'array', items: { type: 'string' } },
-          start: { type: 'string', format: 'date-time' },
-          end: { type: 'string', format: 'date-time' },
+          roomId: { type: 'string', description: 'ID студии' },
+          equipmentIds: { type: 'array', items: { type: 'string' }, description: 'Устаревший формат: список ID оборудования (будет автоматически преобразован в equipment с quantity=1)' },
+          equipment: { 
+            type: 'array', 
+            items: { $ref: '#/components/schemas/BookingEquipment' },
+            description: 'Новый формат: оборудование с указанием количества. Если указан, то equipmentIds игнорируется'
+          },
+          start: { type: 'string', format: 'date-time', description: 'Дата и время начала бронирования' },
+          end: { type: 'string', format: 'date-time', description: 'Дата и время окончания бронирования' },
           promocode: { type: 'string', description: 'Промокод для получения скидки' },
         },
+        example: {
+          roomId: '507f1f77bcf86cd799439011',
+          equipment: [
+            { equipmentId: '507f191e810c19729de860ea', quantity: 2 },
+            { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
+          ],
+          start: '2024-03-20T10:00:00.000Z',
+          end: '2024-03-20T14:00:00.000Z',
+          promocode: 'DISCOUNT10'
+        }
       },
       UpdateBookingDTO: {
         type: 'object',
         properties: {
-          roomId: { type: 'string' },
-          equipmentIds: { type: 'array', items: { type: 'string' } },
-          start: { type: 'string', format: 'date-time' },
-          end: { type: 'string', format: 'date-time' },
-          status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
-          totalPrice: { type: 'number' },
-          paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'] },
-          isPaid: { type: 'boolean' },
+          roomId: { type: 'string', description: 'ID студии' },
+          equipmentIds: { type: 'array', items: { type: 'string' }, description: 'Устаревший формат: список ID оборудования' },
+          equipment: { 
+            type: 'array', 
+            items: { $ref: '#/components/schemas/BookingEquipment' },
+            description: 'Новый формат: оборудование с указанием количества'
+          },
+          start: { type: 'string', format: 'date-time', description: 'Дата и время начала' },
+          end: { type: 'string', format: 'date-time', description: 'Дата и время окончания' },
+          status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'], description: 'Статус бронирования' },
+          totalPrice: { type: 'number', description: 'Итоговая цена' },
+          paymentMethod: { type: 'string', enum: ['online', 'on_site_cash', 'on_site_card'], description: 'Способ оплаты' },
+          isPaid: { type: 'boolean', description: 'Оплачено ли' },
           isHalfPaid: { type: 'boolean', description: 'Признак половинной оплаты (45%-55% от total)' },
         },
       },
@@ -148,14 +181,30 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         type: 'object',
         required: ['userId', 'roomId', 'start', 'end', 'paymentMethod'],
         properties: {
-          userId: { type: 'string' },
-          roomId: { type: 'string' },
-          equipmentIds: { type: 'array', items: { type: 'string' } },
-          start: { type: 'string', format: 'date-time' },
-          end: { type: 'string', format: 'date-time' },
-          totalPrice: { type: 'number' },
-          paymentMethod: { type: 'string', enum: ['on_site_cash', 'on_site_card'] },
+          userId: { type: 'string', description: 'ID пользователя, для которого создаётся бронирование' },
+          roomId: { type: 'string', description: 'ID студии' },
+          equipmentIds: { type: 'array', items: { type: 'string' }, description: 'Устаревший формат: список ID оборудования (будет автоматически преобразован в equipment с quantity=1)' },
+          equipment: { 
+            type: 'array', 
+            items: { $ref: '#/components/schemas/BookingEquipment' },
+            description: 'Новый формат: оборудование с указанием количества. Если указан, то equipmentIds игнорируется'
+          },
+          start: { type: 'string', format: 'date-time', description: 'Дата и время начала бронирования' },
+          end: { type: 'string', format: 'date-time', description: 'Дата и время окончания бронирования' },
+          totalPrice: { type: 'number', description: 'Общая стоимость (опционально, если не указана - рассчитается автоматически)' },
+          paymentMethod: { type: 'string', enum: ['on_site_cash', 'on_site_card'], description: 'Способ оплаты' },
         },
+        example: {
+          userId: '507f1f77bcf86cd799439012',
+          roomId: '507f1f77bcf86cd799439011',
+          equipment: [
+            { equipmentId: '507f191e810c19729de860ea', quantity: 3 },
+            { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
+          ],
+          start: '2024-03-25T09:00:00.000Z',
+          end: '2024-03-25T18:00:00.000Z',
+          paymentMethod: 'on_site_card'
+        }
       },
       CreateFormDTO: {
         type: 'object',
@@ -334,24 +383,31 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       UpdateEquipmentDTO: {
         type: 'object',
         properties: {
-          name: { type: 'string' },
-          description: { type: 'string' },
-          pricePerHour: { type: 'number' },
-          image: { type: 'string' },
+          name: { type: 'string', description: 'Название оборудования' },
+          description: { type: 'string', description: 'Описание оборудования' },
+          pricePerHour: { type: 'number', description: 'Цена за час аренды' },
+          image: { type: 'string', description: 'URL основного изображения (устаревшее поле)' },
+          images: { 
+            type: 'array', 
+            items: { type: 'string' },
+            description: 'Массив URL изображений в нужном порядке. Позволяет администратору управлять порядком отображения фотографий'
+          },
+          totalQuantity: { type: 'number', minimum: 0, description: 'Общее количество единиц оборудования в наличии' },
         },
       },
       Equipment: {
         type: 'object',
         properties: {
           _id: { type: 'string', description: 'ObjectId' },
-          name: { type: 'string' },
-          description: { type: 'string' },
-          pricePerHour: { type: 'number' },
-          image: { type: 'string' },
-          images: { type: 'array', items: { type: 'string' }, description: 'URLs изображений' },
+          name: { type: 'string', description: 'Название оборудования' },
+          description: { type: 'string', description: 'Описание оборудования' },
+          pricePerHour: { type: 'number', description: 'Цена за час аренды' },
+          image: { type: 'string', description: 'URL основного изображения (устаревшее поле)' },
+          images: { type: 'array', items: { type: 'string' }, description: 'Массив URLs изображений в определённом порядке' },
+          totalQuantity: { type: 'number', minimum: 0, description: 'Общее количество единиц оборудования в наличии' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
-          isDeleted: { type: 'boolean' },
+          isDeleted: { type: 'boolean', description: 'Флаг мягкого удаления' },
         },
       },
       // Rooms
@@ -382,23 +438,28 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       UpdateRoomDTO: {
         type: 'object',
         properties: {
-          name: { type: 'string' },
-          address: { type: 'string' },
-          area: { type: 'number' },
-          pricePerHour: { type: 'number' },
-          category: { type: 'string' },
-          minBookingHours: { type: 'number' },
-          ceilingHeightMeters: { type: 'number' },
-          features: { type: 'array', items: { type: 'string' } },
-          sharedSpace: { type: 'boolean' },
-          cycWall: { type: 'boolean' },
-          hasMakeupTable: { type: 'boolean' },
-          noPassSystem: { type: 'boolean' },
-          pricing: { $ref: '#/components/schemas/RoomPricing' },
-          colorScheme: { type: 'array', items: { type: 'string' } },
-          styles: { type: 'array', items: { type: 'string' } },
-          description: { type: 'string' },
-          isAvailable: { type: 'boolean', description: 'Флаг доступности зала' },
+          name: { type: 'string', description: 'Название студии' },
+          address: { type: 'string', description: 'Адрес студии' },
+          area: { type: 'number', description: 'Площадь в кв. метрах' },
+          pricePerHour: { type: 'number', description: 'Базовая цена за час' },
+          category: { type: 'string', description: 'Категория студии' },
+          minBookingHours: { type: 'number', description: 'Минимальное количество часов для бронирования' },
+          ceilingHeightMeters: { type: 'number', description: 'Высота потолков в метрах' },
+          features: { type: 'array', items: { type: 'string' }, description: 'Особенности студии' },
+          sharedSpace: { type: 'boolean', description: 'Общее пространство' },
+          cycWall: { type: 'boolean', description: 'Наличие циклорамы' },
+          hasMakeupTable: { type: 'boolean', description: 'Наличие гримёрного стола' },
+          noPassSystem: { type: 'boolean', description: 'Отсутствие пропускной системы' },
+          pricing: { $ref: '#/components/schemas/RoomPricing', description: 'Дифференцированное ценообразование' },
+          colorScheme: { type: 'array', items: { type: 'string' }, description: 'Цветовая схема интерьера' },
+          styles: { type: 'array', items: { type: 'string' }, description: 'Стили интерьера' },
+          description: { type: 'string', description: 'Описание студии' },
+          images: { 
+            type: 'array', 
+            items: { type: 'string' },
+            description: 'Массив URL изображений в нужном порядке. Позволяет администратору управлять порядком отображения фотографий студии'
+          },
+          isAvailable: { type: 'boolean', description: 'Флаг доступности зала для отображения' },
           availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
         },
       },
@@ -1288,17 +1349,45 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       post: {
         tags: ['Bookings'],
         summary: 'Создать бронь',
+        description: 'Создание нового бронирования. Поддерживаются два формата указания оборудования:\n\n1. **Новый формат (рекомендуется)**: `equipment` - массив объектов с `equipmentId` и `quantity`\n2. **Старый формат (совместимость)**: `equipmentIds` - массив ID, автоматически преобразуется в `equipment` с `quantity=1`\n\n**Важно**: Система проверяет доступность оборудования - если запрошенное количество превышает доступное, будет ошибка 400.',
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBookingDTO' } } },
+          content: { 
+            'application/json': { 
+              schema: { $ref: '#/components/schemas/CreateBookingDTO' },
+              examples: {
+                newFormat: {
+                  summary: 'Новый формат с количеством',
+                  value: {
+                    roomId: '507f1f77bcf86cd799439011',
+                    equipment: [
+                      { equipmentId: '507f191e810c19729de860ea', quantity: 2 },
+                      { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
+                    ],
+                    start: '2024-03-20T10:00:00.000Z',
+                    end: '2024-03-20T14:00:00.000Z'
+                  }
+                },
+                oldFormat: {
+                  summary: 'Старый формат (совместимость)',
+                  value: {
+                    roomId: '507f1f77bcf86cd799439011',
+                    equipmentIds: ['507f191e810c19729de860ea', '507f191e810c19729de860eb'],
+                    start: '2024-03-20T10:00:00.000Z',
+                    end: '2024-03-20T14:00:00.000Z'
+                  }
+                }
+              }
+            } 
+          },
         },
         responses: {
           '201': {
-            description: 'Created',
+            description: 'Бронирование успешно создано',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Booking' } } },
           },
-          '400': { description: 'Ошибка валидации/пересечение' }
+          '400': { description: 'Ошибка валидации, пересечение времени или недостаточно доступного оборудования' }
         },
       },
     },
@@ -1328,20 +1417,50 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       post: {
         tags: ['Bookings'],
         summary: 'Создать бронь от имени пользователя (админ)',
+        description: 'Создание бронирования администратором от имени пользователя. Поддерживаются два формата указания оборудования:\n\n1. **Новый формат (рекомендуется)**: `equipment` - массив объектов с `equipmentId` и `quantity`\n2. **Старый формат (совместимость)**: `equipmentIds` - массив ID, автоматически преобразуется в `equipment` с `quantity=1`\n\n**Особенности**:\n- Система проверяет доступность оборудования по количеству\n- Цена рассчитывается автоматически с учётом количества оборудования\n- Требуется указать способ оплаты (наличные или карта на месте)',
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
-            'application/json': { schema: { $ref: '#/components/schemas/AdminCreateBookingDTO' } },
+            'application/json': { 
+              schema: { $ref: '#/components/schemas/AdminCreateBookingDTO' },
+              examples: {
+                newFormat: {
+                  summary: 'Новый формат с количеством',
+                  value: {
+                    userId: '507f1f77bcf86cd799439012',
+                    roomId: '507f1f77bcf86cd799439011',
+                    equipment: [
+                      { equipmentId: '507f191e810c19729de860ea', quantity: 3 },
+                      { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
+                    ],
+                    start: '2024-03-25T09:00:00.000Z',
+                    end: '2024-03-25T18:00:00.000Z',
+                    paymentMethod: 'on_site_card'
+                  }
+                },
+                oldFormat: {
+                  summary: 'Старый формат (совместимость)',
+                  value: {
+                    userId: '507f1f77bcf86cd799439012',
+                    roomId: '507f1f77bcf86cd799439011',
+                    equipmentIds: ['507f191e810c19729de860ea', '507f191e810c19729de860eb'],
+                    start: '2024-03-25T09:00:00.000Z',
+                    end: '2024-03-25T18:00:00.000Z',
+                    paymentMethod: 'on_site_cash'
+                  }
+                }
+              }
+            },
           },
         },
         responses: {
           '201': {
-            description: 'Created',
+            description: 'Бронирование успешно создано',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Booking' } } },
           },
-          '400': { description: 'Ошибка валидации/пересечение/не найдены сущности' },
-          '403': { description: 'Недостаточно прав' },
+          '400': { description: 'Ошибка валидации, пересечение времени, недостаточно оборудования или не найдены сущности' },
+          '403': { description: 'Недостаточно прав (требуется роль администратора)' },
         },
       },
     },

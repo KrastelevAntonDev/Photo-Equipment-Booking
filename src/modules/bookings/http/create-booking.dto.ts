@@ -1,4 +1,15 @@
-import { IsNotEmpty, IsString, IsDateString, IsArray, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsArray, IsOptional, IsNumber, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class BookingEquipmentDTO {
+  @IsString()
+  @IsNotEmpty()
+  equipmentId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+}
 
 export class CreateBookingDTO {
   @IsString()
@@ -8,7 +19,13 @@ export class CreateBookingDTO {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  equipmentIds?: string[];
+  equipmentIds?: string[]; // старый формат для совместимости
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BookingEquipmentDTO)
+  @IsOptional()
+  equipment?: BookingEquipmentDTO[]; // новый формат с количеством
 
   @IsDateString()
   start: Date;

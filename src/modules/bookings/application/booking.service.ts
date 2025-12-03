@@ -58,11 +58,27 @@ export class BookingService {
 		if (!room) throw new Error("Room not found");
 		console.log(room);
 
-		// Проверка оборудования
-		if (booking.equipmentIds && booking.equipmentIds.length) {
-			for (const eqId of booking.equipmentIds) {
-				const eq = await this.equipmentRepository.findById(eqId.toString());
-				if (!eq) throw new Error(`Equipment not found: ${eqId}`);
+		// Fallback: преобразуем старый формат equipmentIds в новый equipment с quantity=1
+		if (!booking.equipment && booking.equipmentIds && booking.equipmentIds.length) {
+			booking.equipment = booking.equipmentIds.map(id => ({
+				equipmentId: id,
+				quantity: 1
+			}));
+		}
+
+		// Проверка оборудования (новый формат с количеством)
+		if (booking.equipment && booking.equipment.length) {
+			for (const item of booking.equipment) {
+				const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
+				if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
+				
+				// Проверка доступного количества
+				if (eq.totalQuantity && eq.totalQuantity > 0) {
+					const available = (eq.totalQuantity || 0) - (eq.bookedQuantity || 0);
+					if (item.quantity > available) {
+						throw new Error(`Недостаточно единиц оборудования "${eq.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+					}
+				}
 			}
 		}
 
@@ -80,13 +96,19 @@ export class BookingService {
 		const equipmentIds = booking.equipmentIds
 			? booking.equipmentIds.map((id) => new ObjectId(id))
 			: [];
+		
+		// Конвертируем equipment в ObjectId если используется новый формат
+		const equipmentWithIds = booking.equipment
+			? booking.equipment.map((item) => ({
+				equipmentId: new ObjectId(item.equipmentId),
+				quantity: item.quantity
+			}))
+			: undefined;
+		
 		// Рассчёт стоимости по новым правилам: тариф комнаты по времени + оборудование
-		const eqIdsForPrice = (booking.equipmentIds || []).map((id: any) =>
-			id.toString()
-		);
-		const computedTotal = await this.computeTotalPrice(
+		const computedTotal = await this.computeTotalPriceWithEquipment(
 			booking.roomId.toString(),
-			eqIdsForPrice,
+			booking.equipment || [],
 			booking.start,
 			booking.end
 		);
@@ -120,6 +142,7 @@ export class BookingService {
 			roomId: new ObjectId(booking.roomId),
 			userId: new ObjectId(userId),
 			equipmentIds,
+			equipment: equipmentWithIds,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			start: new Date(booking.start),
@@ -182,6 +205,7 @@ export class BookingService {
 		payload: {
 			roomId: string;
 			equipmentIds?: string[];
+			equipment?: Array<{ equipmentId: string; quantity: number }>;
 			start: string | Date;
 			end: string | Date;
 			totalPrice?: number;
@@ -196,11 +220,27 @@ export class BookingService {
 		const room = await this.roomRepository.findById(payload.roomId.toString());
 		if (!room) throw new Error("Room not found");
 
-		// Проверка оборудования
-		if (payload.equipmentIds && payload.equipmentIds.length) {
-			for (const eqId of payload.equipmentIds) {
-				const eq = await this.equipmentRepository.findById(eqId.toString());
-				if (!eq) throw new Error(`Equipment not found: ${eqId}`);
+		// Fallback: преобразуем старый формат equipmentIds в новый equipment с quantity=1
+		if (!payload.equipment && payload.equipmentIds && payload.equipmentIds.length) {
+			payload.equipment = payload.equipmentIds.map(id => ({
+				equipmentId: id,
+				quantity: 1
+			}));
+		}
+
+		// Проверка оборудования (новый формат с количеством)
+		if (payload.equipment && payload.equipment.length) {
+			for (const item of payload.equipment) {
+				const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
+				if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
+				
+				// Проверка доступного количества
+				if (eq.totalQuantity && eq.totalQuantity > 0) {
+					const available = (eq.totalQuantity || 0) - (eq.bookedQuantity || 0);
+					if (item.quantity > available) {
+						throw new Error(`Недостаточно единиц оборудования "${eq.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+					}
+				}
 			}
 		}
 
@@ -228,6 +268,15 @@ export class BookingService {
 		const equipmentIds = payload.equipmentIds
 			? payload.equipmentIds.map((id) => new ObjectId(id))
 			: [];
+		
+		// Конвертируем equipment в ObjectId если используется новый формат
+		const equipmentWithIds = payload.equipment
+			? payload.equipment.map((item) => ({
+				equipmentId: new ObjectId(item.equipmentId),
+				quantity: item.quantity
+			}))
+			: undefined;
+		
 		// В админском сценарии запрещаем online
 		if (
 			payload.paymentMethod !== "on_site_cash" &&
@@ -235,16 +284,20 @@ export class BookingService {
 		) {
 			throw new Error("Invalid payment method for admin booking");
 		}
-		const computedTotal = await this.computeTotalPrice(
+		
+		// Рассчёт стоимости с учетом нового формата
+		const computedTotal = await this.computeTotalPriceWithEquipment(
 			payload.roomId.toString(),
-			payload.equipmentIds || [],
+			payload.equipment || [],
 			startDate,
 			endDate
 		);
+		
 		const newBody: Booking = {
 			userId: new ObjectId(userId),
 			roomId: new ObjectId(payload.roomId),
 			equipmentIds,
+			equipment: equipmentWithIds,
 			start: startDate,
 			end: endDate,
 			status: "pending",
@@ -407,7 +460,64 @@ export class BookingService {
 			return updated;
 		}
 
+	// Расчёт стоимости с учетом количества оборудования (новый метод)
+	private async computeTotalPriceWithEquipment(
+		roomId: string,
+		equipment: Array<{ equipmentId: string | ObjectId; quantity: number }>,
+		start: Date | string,
+		end: Date | string
+	): Promise<number> {
+		const room = await this.roomRepository.findById(roomId);
+		if (!room) throw new Error("Room not found");
+
+		const startDate = new Date(start);
+		const endDate = new Date(end);
+		if (!(startDate instanceof Date) || isNaN(startDate.getTime())) {
+			throw new Error("Invalid start date");
+		}
+		if (!(endDate instanceof Date) || isNaN(endDate.getTime())) {
+			throw new Error("Invalid end date");
+		}
+		if (endDate <= startDate)
+			throw new Error("End time must be after start time");
+
+		// Минимальная длительность брони
+		if (room.minBookingHours && room.minBookingHours > 0) {
+			const diffH = (endDate.getTime() - startDate.getTime()) / 36e5;
+			if (diffH + 1e-9 < room.minBookingHours) {
+				throw new Error(`Минимальное время брони для зала "${room.name}" — ${room.minBookingHours} ч.`);
+			}
+		}
+
+		// Рассчитываем стоимость оборудования с учетом количества
+		let equipmentSum = 0;
+		for (const item of equipment) {
+			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
+			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
+			equipmentSum += eq.pricePerHour * item.quantity;
+		}
+
+		// Итерация по часовым сегментам (с учётом неполных часов)
+		let total = 0;
+		let cursor = new Date(startDate);
+		while (cursor < endDate) {
+			const nextHour = new Date(cursor);
+			nextHour.setMinutes(0, 0, 0);
+			if (nextHour <= cursor) nextHour.setHours(nextHour.getHours() + 1);
+			const segmentEnd = endDate < nextHour ? endDate : nextHour;
+			const segmentHours = (segmentEnd.getTime() - cursor.getTime()) / 36e5;
+
+			const roomRate = this.resolveRoomRate(room, cursor);
+			total += (roomRate + equipmentSum) * segmentHours;
+
+			cursor = segmentEnd;
+		}
+
+		return Math.round(total * 100) / 100;
+	}
+
 	// Расчёт стоимости по тарифам: покомпонентно по часам/получасам с учётом пятницы с 17:00 и выходных/праздников
+	// Старый метод для совместимости с equipmentIds
 	private async computeTotalPrice(
 		roomId: string,
 		equipmentIds: string[],

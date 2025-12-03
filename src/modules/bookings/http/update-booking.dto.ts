@@ -1,4 +1,15 @@
-import { IsOptional, IsMongoId, IsArray, IsDateString, IsEnum, IsNumber, IsBoolean, ArrayUnique } from 'class-validator';
+import { IsOptional, IsMongoId, IsArray, IsDateString, IsEnum, IsNumber, IsBoolean, ArrayUnique, ValidateNested, Min, IsNotEmpty, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class BookingEquipmentDTO {
+  @IsString()
+  @IsNotEmpty()
+  equipmentId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+}
 
 export class UpdateBookingDTO {
   @IsOptional()
@@ -9,7 +20,13 @@ export class UpdateBookingDTO {
   @IsArray()
   @ArrayUnique()
   @IsMongoId({ each: true })
-  equipmentIds?: string[];
+  equipmentIds?: string[]; // старый формат
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BookingEquipmentDTO)
+  equipment?: BookingEquipmentDTO[]; // новый формат
 
   @IsOptional()
   @IsDateString()

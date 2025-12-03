@@ -91,10 +91,11 @@ export class BookingController {
 
   async adminCreateBooking(req: Request, res: Response) {
     try {
-      const { userId, roomId, equipmentIds, start, end, totalPrice, paymentMethod } = req.body as any;
+      const { userId, roomId, equipmentIds, equipment, start, end, totalPrice, paymentMethod } = req.body as any;
       const newBooking = await this.bookingService.createBookingForUser(userId, {
         roomId,
         equipmentIds,
+        equipment,
         start,
         end,
         totalPrice,
@@ -103,7 +104,7 @@ export class BookingController {
       res.status(201).json(newBooking);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const status = /already booked|User not found|Room not found|Equipment not found|End time|Invalid payment method/.test(errorMessage) ? 400 : 500;
+      const status = /already booked|User not found|Room not found|Equipment not found|End time|Invalid payment method|Недостаточно единиц/.test(errorMessage) ? 400 : 500;
       res.status(status).json({ message: errorMessage });
     }
   }
