@@ -14,10 +14,15 @@ export class RoomMongoRepository implements IRoomRepository {
 	}
 
 	async findAll(): Promise<Room[]> {
-		return this.getCollection().find<Room>({ isDeleted: { $ne: true } }).toArray();
+		// Публичный API: показываем только доступные залы (isAvailable: true, isDeleted: false)
+		return this.getCollection().find<Room>({ 
+			isDeleted: { $ne: true },
+			isAvailable: true 
+		}).toArray();
 	}
 
 	async findAllIncludingDeleted(): Promise<Room[]> {
+		// Админка: показываем все залы (включая недоступные и удалённые)
 		return this.getCollection().find<Room>({}).toArray();
 	}
 

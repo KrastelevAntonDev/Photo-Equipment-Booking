@@ -49,7 +49,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           styles: { type: 'array', items: { type: 'string' } },
           description: { type: 'string' },
           images: { type: 'array', items: { type: 'string' } },
-          isAvailable: { type: 'boolean', description: 'Флаг доступности зала для отображения' },
+          isAvailable: { type: 'boolean', description: 'Флаг доступности зала. Если false - зал не отображается в публичном API (/rooms), но виден в админке (/admin/rooms)' },
           availableFrom: { type: 'string', format: 'date-time', description: 'Дата начала работы зала' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
