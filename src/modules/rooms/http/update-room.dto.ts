@@ -74,6 +74,11 @@ export class UpdateRoomDTO {
   @IsOptional()
   description?: string;
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
+
   @IsOptional()
   @IsBoolean()
   isAvailable?: boolean;

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { Room } from '@modules/rooms/domain/room.entity';
+import { connectDB } from '@/config/database';
 
 // CSV‑driven сидер комнат. Источник: new-info.csv в корне проекта.
 // Сохраняем ТОЛЬКО описания из старого сидера (descriptionMap).

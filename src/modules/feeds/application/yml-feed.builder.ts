@@ -7,8 +7,161 @@ const EQUIPMENT_CATEGORY_ID = 20;
 const MAX_DESCRIPTION_LENGTH = 2800;
 const MAX_PICTURES_PER_OFFER = 10;
 const DEFAULT_LIMIT = 20000;
-const STUDIO_PATH = '/studios';
+const STUDIO_DETAIL_PATH = '/hall';
+const STUDIO_LIST_PATH = '/studios';
 const EQUIPMENT_PATH = '/equipment';
+
+/**
+ * Маппинг русских названий студий на английские slug'и для URL
+ */
+export const STUDIO_NAME_TO_SLUG: Record<string, string> = {
+  'АМСТЕРДАМ': 'amsterdam',
+  'АМСТЕРДАМ (ЦИКЛОРАМА)': 'amsterdam',
+  'АВАНГАРД': 'avangard',
+  'АВАНГАРД (ЦИКЛОРАМА)': 'avangard',
+  'АФРОДИТА': 'aphrodite',
+  'БИСТРО': 'bistro',
+  'БРУКЛИН': 'brooklyn',
+  'КИОТО': 'kyoto',
+  'КРИПТОН': 'krypton',
+  'ЛОФТ РУМ': 'loftroom',
+  'ЛОНДОН': 'london',
+  'МАНУФАКТУРА': 'manufacture',
+  'МАНУФАКТУРА (ЦИКЛОРАМА)': 'manufacture',
+  'МАРРАКЕШ': 'marrakesh',
+  'НИАГАРА': 'niagara',
+  'ОАЗИС': 'oasis',
+  'ОСТЕРИЯ': 'osteria',
+  'ПОДКАСТНАЯ': 'podcast',
+  'ПЬЕР': 'pierre',
+  'РАЙ': 'paradise',
+  'САНТОРИНИ': 'santorini',
+  'САТУРН': 'saturn',
+  'СИЦИЛИЯ': 'sicily',
+  'ШАНХАЙ': 'shanghai',
+  'ХРОМ': 'chrome',
+  'ХРОМ (ЦИКЛОРАМА)': 'chrome',
+  'ЧАЙКОВСКИЙ': 'tchaikovsky',
+  'ЗАЛ ЧАЙКОВСКИЙ': 'tchaikovsky',
+  '2 ЛИКА': 'twofaces',
+};
+
+const STUDIO_NAME_LOOKUP = new Map<string, string>();
+const STUDIO_SLUG_LOOKUP = new Map<string, string>();
+const STUDIO_SLUG_TO_NAME_LOOKUP = new Map<string, string>();
+
+(function initializeStudioLookups() {
+  for (const [rawName, slug] of Object.entries(STUDIO_NAME_TO_SLUG)) {
+    registerStudioLookupEntry(rawName, slug);
+  }
+})();
+
+/**
+ * Преобразует название студии в slug для URL
+ * @param studioName - Название студии (может быть на русском)
+ * @returns Slug для URL (на английском) или null, если не найден
+ */
+export function getStudioSlug(studioName: string): string | null {
+  if (!studioName) return null;
+  const normalizedName = normalizeStudioName(studioName);
+  if (!normalizedName) return null;
+
+  const direct = STUDIO_NAME_LOOKUP.get(normalizedName);
+  if (direct) return direct;
+
+  const cleanedName = stripParentheses(normalizedName);
+  if (cleanedName && cleanedName !== normalizedName) {
+    const cleanedMatch = STUDIO_NAME_LOOKUP.get(cleanedName);
+    if (cleanedMatch) return cleanedMatch;
+  }
+
+  const slugKey = normalizeSlugKey(studioName);
+  if (slugKey) {
+    const slugMatch = STUDIO_SLUG_LOOKUP.get(slugKey);
+    if (slugMatch) return slugMatch;
+  }
+
+  if (cleanedName && cleanedName !== normalizedName) {
+    const cleanedSlugKey = normalizeSlugKey(cleanedName);
+    if (cleanedSlugKey) {
+      const cleanedSlugMatch = STUDIO_SLUG_LOOKUP.get(cleanedSlugKey);
+      if (cleanedSlugMatch) return cleanedSlugMatch;
+    }
+  }
+
+  for (const [key, slug] of STUDIO_NAME_LOOKUP.entries()) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return slug;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Преобразует slug обратно в название студии (для поиска)
+ * @param slug - Slug студии
+ * @returns Русское название студии или null, если не найдено
+ */
+export function getStudioNameFromSlug(slug: string): string | null {
+  if (!slug) return null;
+  const normalizedSlug = slug.trim().toLowerCase();
+  const canonicalSlug = normalizedSlug
+    ? STUDIO_SLUG_LOOKUP.get(normalizeSlugKey(normalizedSlug)) ?? normalizedSlug
+    : normalizedSlug;
+  return canonicalSlug ? STUDIO_SLUG_TO_NAME_LOOKUP.get(canonicalSlug) ?? null : null;
+}
+
+function registerStudioLookupEntry(rawName: string, slug: string): void {
+  const normalizedName = normalizeStudioName(rawName);
+  if (normalizedName) {
+    STUDIO_NAME_LOOKUP.set(normalizedName, slug);
+  }
+
+  const strippedName = stripParentheses(normalizedName);
+  if (strippedName && strippedName !== normalizedName) {
+    STUDIO_NAME_LOOKUP.set(strippedName, slug);
+  }
+
+  const slugVariants = new Set([
+    normalizeSlugKey(rawName),
+    normalizeSlugKey(normalizedName),
+    normalizeSlugKey(strippedName),
+    normalizeSlugKey(slug),
+  ]);
+
+  for (const variant of slugVariants) {
+    if (variant) {
+      STUDIO_SLUG_LOOKUP.set(variant, slug);
+    }
+  }
+
+  const canonicalSlug = slug.trim().toLowerCase();
+  if (canonicalSlug && !STUDIO_SLUG_TO_NAME_LOOKUP.has(canonicalSlug)) {
+    STUDIO_SLUG_TO_NAME_LOOKUP.set(canonicalSlug, rawName);
+  }
+}
+
+function normalizeStudioName(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/ё/g, 'е')
+    .replace(/Ё/g, 'Е')
+    .replace(/[-–—]/g, ' ')
+    .replace(/[«»"“”'’]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function stripParentheses(value: string): string {
+  return value.replace(/\s*\([^)]*\)/g, '').trim();
+}
+
+function normalizeSlugKey(value?: string | null): string {
+  if (!value) return '';
+  return slugify(value).replace(/-/g, '');
+}
 
 type OfferKind = 'room' | 'equipment';
 
@@ -189,6 +342,7 @@ export function buildYmlFeed(params: BuildYmlFeedParams): BuildYmlFeedResult {
   }
 
   if (includeEquipment) {
+	console.log('equipment', equipment);r
     for (const item of equipment) {
       stats.equipment.total += 1;
       const result = buildEquipmentOffer(item, {
@@ -289,9 +443,9 @@ function buildRoomOffer(
     return { reason: 'no-image' };
   }
 
-  const slug = slugify(room.name);
+  const slug = getStudioSlug(room.name) ?? slugify(room.name);
   const roomId = room._id?.toString();
-  const url = appendQuery(joinPath(deps.siteBase, `${STUDIO_PATH}/${slug}`), roomId ? `roomId=${roomId}` : undefined);
+  const url = joinPath(deps.siteBase, `${STUDIO_DETAIL_PATH}/${slug}`);
   const categoryId = deps.getRoomCategoryId(room.category);
 
   const description = formatDescription(
@@ -337,7 +491,7 @@ function buildRoomOffer(
       offer,
       'room-category',
       room.category,
-      `${STUDIO_PATH}?category=`,
+      `${STUDIO_LIST_PATH}?category=`,
       room.category,
     );
   }
@@ -349,7 +503,7 @@ function buildRoomOffer(
         offer,
         'room-style',
         `Студии — ${style}`,
-        `${STUDIO_PATH}?style=`,
+        `${STUDIO_LIST_PATH}?style=`,
         style,
       );
     }

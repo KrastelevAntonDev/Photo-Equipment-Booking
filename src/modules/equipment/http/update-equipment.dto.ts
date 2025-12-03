@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsArray } from 'class-validator';
 
 export class UpdateEquipmentDTO {
   @IsString()
@@ -16,6 +16,11 @@ export class UpdateEquipmentDTO {
   @IsString()
   @IsOptional()
   image?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
 
   @IsNumber()
   @IsOptional()

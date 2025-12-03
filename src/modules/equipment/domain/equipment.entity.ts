@@ -7,6 +7,7 @@ export interface Equipment {
   description?: string;
   pricePerHour: number;
   image?: string;
+  images?: string[];              // массив изображений с возможностью указания порядка
   totalQuantity?: number;         // Общее количество единиц оборудования
   bookedQuantity?: number;        // Количество забронированных единиц
   availableQuantity?: number;     // Доступное количество (вычисляемое: totalQuantity - bookedQuantity)
