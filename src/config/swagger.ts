@@ -1714,7 +1714,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       },
     },
     // Promocodes
-    '/api/promocodes': {
+    '/promocodes': {
       post: {
         tags: ['Promocodes'],
         summary: 'Создать новый промокод',
@@ -1778,7 +1778,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/promocodes/validate': {
+    '/promocodes/validate': {
       post: {
         tags: ['Promocodes'],
         summary: 'Проверить валидность промокода',
@@ -1813,7 +1813,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/promocodes/{id}': {
+    '/promocodes/{id}': {
       get: {
         tags: ['Promocodes'],
         summary: 'Получить промокод по ID',
@@ -1913,7 +1913,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/equipment': {
+    '/equipment??': {
       get: {
         tags: ['Equipment'],
         summary: 'Получить список оборудования (для пользователей)',
@@ -1960,7 +1960,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/admin/equipment': {
+    '/admin/equipment': {
       get: {
         tags: ['Equipment'],
         summary: 'Получить всё оборудование (для админов)',
@@ -1983,7 +1983,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/equipment/{id}': {
+    '/equipment/{id}?': {
       put: {
         tags: ['Equipment'],
         summary: 'Обновить оборудование (только админ)',
@@ -2055,7 +2055,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/rooms': {
+    '/rooms??': {
       get: {
         tags: ['Rooms'],
         summary: 'Получить список студий (для пользователей)',
@@ -2102,7 +2102,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/admin/rooms': {
+    '/admin/rooms': {
       get: {
         tags: ['Rooms'],
         summary: 'Получить все студии (для админов)',
@@ -2125,7 +2125,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         }
       }
     },
-    '/api/rooms/{id}': {
+    '/rooms/{id}?': {
       get: {
         tags: ['Rooms'],
         summary: 'Получить студию по ID',
