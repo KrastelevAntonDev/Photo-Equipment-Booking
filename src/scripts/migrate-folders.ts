@@ -10,8 +10,8 @@ import { sanitizeFolderName } from '@shared/utils/folder.utils';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const projectRoot = isProduction 
-  ? path.join(__dirname, '..', '..') 
-  : path.join(__dirname, '..', '..');
+  ? '/app/dist'  // В production скрипт находится в /app/dist/scripts/
+  : path.join(__dirname, '..', '..');  // Локально
 
 const roomsPath = path.join(projectRoot, 'public', 'uploads', 'rooms');
 const equipmentPath = path.join(projectRoot, 'public', 'uploads', 'equipment');
