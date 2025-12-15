@@ -108,6 +108,11 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           paidAmount: { type: 'number' },
           paymentStatus: { type: 'string', enum: ['unpaid', 'partial', 'paid'] },
           isHalfPaid: { type: 'boolean', description: 'Признак половинной оплаты (45%-55% от total)' },
+          type: { type: 'string', enum: ['photo', 'video', 'event'], description: 'Тип съёмки' },
+          people: { type: 'string', enum: ['up-to-10', 'more-than-10', 'more-than-20', 'more-than-50'], description: 'Количество человек' },
+          bookingPaymentMethod: { type: 'string', enum: ['card-50', 'card-full', 'invoice'], description: 'Способ оплаты из формы бронирования' },
+          services: { type: 'array', items: { type: 'string' }, description: 'Дополнительные услуги (ID)' },
+          entityType: { type: 'string', enum: ['individual', 'company'], description: 'Тип клиента' },
           user: {
             type: 'object',
             description: 'Данные пользователя (для отображения без джоина)',
@@ -134,27 +139,41 @@ export const openapiSpec: OpenAPIV3_1.Document = {
       },
       CreateBookingDTO: {
         type: 'object',
-        required: ['roomId', 'start', 'end'],
+        required: ['roomId', 'start', 'end', 'type', 'people', 'paymentMethod', 'entityType'],
         properties: {
+          clientEmail: { type: 'string', format: 'email', description: 'Email клиента (обязательно если нет токена авторизации)' },
+          clientPhone: { type: 'string', description: 'Телефон клиента в формате +7XXXXXXXXXX (обязательно если нет токена)' },
+          clientFio: { type: 'string', description: 'ФИО клиента (обязательно если нет токена)' },
           roomId: { type: 'string', description: 'ID студии' },
+          start: { type: 'string', format: 'date-time', description: 'Дата и время начала бронирования' },
+          end: { type: 'string', format: 'date-time', description: 'Дата и время окончания бронирования' },
+          type: { type: 'string', enum: ['photo', 'video', 'event'], description: 'Тип съёмки' },
+          people: { type: 'string', enum: ['up-to-10', 'more-than-10', 'more-than-20', 'more-than-50'], description: 'Количество человек' },
+          paymentMethod: { type: 'string', enum: ['card-50', 'card-full', 'invoice'], description: 'Способ оплаты' },
+          entityType: { type: 'string', enum: ['individual', 'company'], description: 'Тип клиента' },
+          services: { type: 'array', items: { type: 'string' }, description: 'Массив ID дополнительных услуг' },
           equipmentIds: { type: 'array', items: { type: 'string' }, description: 'Устаревший формат: список ID оборудования (будет автоматически преобразован в equipment с quantity=1)' },
           equipment: { 
             type: 'array', 
             items: { $ref: '#/components/schemas/BookingEquipment' },
             description: 'Новый формат: оборудование с указанием количества. Если указан, то equipmentIds игнорируется'
           },
-          start: { type: 'string', format: 'date-time', description: 'Дата и время начала бронирования' },
-          end: { type: 'string', format: 'date-time', description: 'Дата и время окончания бронирования' },
+          status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled'], description: 'Статус бронирования (опционально)' },
           promocode: { type: 'string', description: 'Промокод для получения скидки' },
         },
         example: {
+          clientEmail: 'client@example.com',
+          clientPhone: '+79261234567',
+          clientFio: 'Иван Петров',
           roomId: '507f1f77bcf86cd799439011',
-          equipment: [
-            { equipmentId: '507f191e810c19729de860ea', quantity: 2 },
-            { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
-          ],
-          start: '2024-03-20T10:00:00.000Z',
-          end: '2024-03-20T14:00:00.000Z',
+          start: '2025-12-20T10:00:00.000Z',
+          end: '2025-12-20T18:00:00.000Z',
+          type: 'photo',
+          people: 'up-to-10',
+          paymentMethod: 'card-50',
+          entityType: 'individual',
+          services: [],
+          equipmentIds: [],
           promocode: 'DISCOUNT10'
         }
       },
