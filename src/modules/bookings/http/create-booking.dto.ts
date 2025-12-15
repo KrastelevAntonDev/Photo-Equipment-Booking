@@ -45,10 +45,8 @@ export class CreateBookingDTO {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['up-to-10', 'more-than-10', 'more-than-20', 'more-than-50'])
-  people: 'up-to-10' | 'more-than-10' | 'more-than-20' | 'more-than-50';
-
-  @IsString()
+	@IsIn(['up-to-10', '11-20', '21-30', '31-40', 'more-than-40'])
+	people: 'up-to-10' | '11-20' | '21-30' | '31-40' | 'more-than-40';
   @IsNotEmpty()
   @IsIn(['card-50', 'card-full', 'invoice'])
   paymentMethod: 'card-50' | 'card-full' | 'invoice';
@@ -86,7 +84,7 @@ export class CreateBookingDTO {
 		start: Date,
 		end: Date,
 		type: 'photo' | 'video' | 'event',
-		people: 'up-to-10' | 'more-than-10' | 'more-than-20' | 'more-than-50',
+		people: 'up-to-10' | '11-20' | '21-30' | '31-40' | 'more-than-40',
 		paymentMethod: 'card-50' | 'card-full' | 'invoice',
 		entityType: 'individual' | 'company',
 		equipmentIds?: string[],

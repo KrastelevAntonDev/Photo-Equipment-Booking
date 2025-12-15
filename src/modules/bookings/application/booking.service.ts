@@ -106,12 +106,17 @@ export class BookingService {
 			: undefined;
 		
 		// Рассчёт стоимости по новым правилам: тариф комнаты по времени + оборудование
-		const computedTotal = await this.computeTotalPriceWithEquipment(
+		let computedTotal = await this.computeTotalPriceWithEquipment(
 			booking.roomId.toString(),
 			booking.equipment || [],
 			booking.start,
 			booking.end
 		);
+
+		// Применяем наценку за количество людей
+		if (booking.people) {
+			computedTotal = this.calculatePeopleSurcharge(computedTotal, booking.people);
+		}
 
 		// Применение промокода, если указан
 		let finalPrice = computedTotal;
@@ -527,6 +532,31 @@ export class BookingService {
 		// Итоговая цена = стоимость зала (зависит от времени) + стоимость оборудования (фиксированная)
 		const total = roomTotalPrice + equipmentTotalPrice;
 		return Math.round(total * 100) / 100;
+	}
+
+	// Расчёт наценки за количество людей
+	private calculatePeopleSurcharge(basePrice: number, people: string): number {
+		let surchargePercent = 0;
+		
+		switch (people) {
+			case '11-20':
+				surchargePercent = 10; // Свыше 10 человек – 10%
+				break;
+			case '21-30':
+				surchargePercent = 15; // Свыше 20 человек – 15%
+				break;
+			case '31-40':
+				surchargePercent = 25; // Свыше 30 человек – 25%
+				break;
+			case 'more-than-40':
+				surchargePercent = 40; // Свыше 40 человек – 40%
+				break;
+			default:
+				surchargePercent = 0; // До 10 человек – без наценки
+		}
+		
+		const surcharge = basePrice * (surchargePercent / 100);
+		return Math.round((basePrice + surcharge) * 100) / 100;
 	}
 
 	// Расчёт стоимости по тарифам: покомпонентно по часам/получасам с учётом пятницы с 17:00 и выходных/праздников
