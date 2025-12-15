@@ -90,7 +90,7 @@ export class CreateBookingDTO {
 		paymentMethod: 'card-50' | 'card-full' | 'invoice',
 		entityType: 'individual' | 'company',
 		equipmentIds?: string[],
-		promocod?: string,
+		promocode?: string,
 		services?: string[],
 		clientFio?: string,
 		clientPhone?: string,
