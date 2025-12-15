@@ -1,6 +1,7 @@
 import { connectDB } from '@config/database';
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
+import { sanitizeFolderName } from '@shared/utils/folder.utils';
 import fs from 'fs';
 import path from 'path';
 
@@ -67,9 +68,10 @@ async function getRoomImagesFromFS(roomName: string): Promise<string[]> {
   const roomDir = path.join(uploadsBase, matchedDir.name);
   const files = await scanImagesInFolder(roomDir);
 
-  // Формируем URL в правильном формате
+  // Формируем URL в правильном формате (без encodeURIComponent, т.к. теперь папки безопасные)
+  const safeFolderName = sanitizeFolderName(matchedDir.name);
   return files.map(file => 
-    `/public/uploads/rooms/${encodeURIComponent(matchedDir.name)}/${encodeURIComponent(file)}`
+    `/public/uploads/rooms/${safeFolderName}/${file}`
   );
 }
 
@@ -109,9 +111,10 @@ async function getEquipmentImagesFromFS(equipmentName: string): Promise<string[]
   const eqDir = path.join(uploadsBase, matchedDir.name);
   const files = await scanImagesInFolder(eqDir);
 
-  // Формируем URL в правильном формате
+  // Формируем URL в правильном формате (без encodeURIComponent, т.к. теперь папки безопасные)
+  const safeFolderName = sanitizeFolderName(matchedDir.name);
   return files.map(file => 
-    `/public/uploads/equipment/${encodeURIComponent(matchedDir.name)}/${encodeURIComponent(file)}`
+    `/public/uploads/equipment/${safeFolderName}/${file}`
   );
 }
 

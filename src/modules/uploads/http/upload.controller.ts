@@ -5,6 +5,7 @@ import fs from 'fs';
 
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
+import { sanitizeFolderName } from '@shared/utils/folder.utils';
 
 type UploadType = 'room' | 'equipment';
 
@@ -68,14 +69,16 @@ export class UploadController {
         const room = await this.roomRepo.findById(id);
         if (!room) return res.status(404).json({ message: 'Room not found' });
         entityName = room.name;
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', entityName);
-        urlBase = ['/public', 'uploads', 'rooms', encodeURIComponent(entityName)].join('/');
+        const safeFolderName = sanitizeFolderName(entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', safeFolderName);
+        urlBase = `/public/uploads/rooms/${safeFolderName}`;
       } else {
         const eq = await this.eqRepo.findById(id);
         if (!eq) return res.status(404).json({ message: 'Equipment not found' });
         entityName = eq.name;
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', entityName);
-        urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
+        const safeFolderName = sanitizeFolderName(entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', safeFolderName);
+        urlBase = `/public/uploads/equipment/${safeFolderName}`;
       }
 
       (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
@@ -86,7 +89,7 @@ export class UploadController {
         if (!req.file) return res.status(400).json({ message: 'Файл не получен. Поле: image' });
 
         const target = (req as any)._uploadTarget as { baseDir: string; urlBase: string };
-        const publicUrl = `${target.urlBase}/${encodeURIComponent(req.file.filename)}`;
+        const publicUrl = `${target.urlBase}/${req.file.filename}`;
 
         try {
           if (type === 'room') {
@@ -171,8 +174,9 @@ export class UploadController {
           return res.status(404).json({ message: 'Room not found' });
         }
         entityName = room.name;
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', entityName);
-        urlBase = ['/public', 'uploads', 'rooms', encodeURIComponent(entityName)].join('/');
+        const safeFolderName = sanitizeFolderName(entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', safeFolderName);
+        urlBase = `/public/uploads/rooms/${safeFolderName}`;
         console.log(`[upload] Multiple upload - Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
       } else {
         const eq = await this.eqRepo.findById(id);
@@ -181,8 +185,9 @@ export class UploadController {
           return res.status(404).json({ message: 'Equipment not found' });
         }
         entityName = eq.name;
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', entityName);
-        urlBase = ['/public', 'uploads', 'equipment', encodeURIComponent(entityName)].join('/');
+        const safeFolderName = sanitizeFolderName(entityName);
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', safeFolderName);
+        urlBase = `/public/uploads/equipment/${safeFolderName}`;
         console.log(`[upload] Multiple upload - Equipment: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
       }
 
@@ -199,7 +204,7 @@ export class UploadController {
         const uploadedUrls: string[] = [];
 
         for (const file of req.files) {
-          const publicUrl = `${target.urlBase}/${encodeURIComponent(file.filename)}`;
+          const publicUrl = `${target.urlBase}/${file.filename}`;
           uploadedUrls.push(publicUrl);
         }
 
