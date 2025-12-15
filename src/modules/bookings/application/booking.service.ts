@@ -82,6 +82,36 @@ export class BookingService {
 			}
 		}
 
+		// Проверка гримерных (новый формат)
+		if (booking.makeupRooms && booking.makeupRooms.length) {
+			const { MakeupRoomMongoRepository } = require('@modules/makeup-rooms/infrastructure/makeup-room.mongo.repository');
+			const makeupRoomRepo = new MakeupRoomMongoRepository();
+			
+			// Рассчитываем длительность брони в часах
+			const bookingDurationHours = (new Date(booking.end).getTime() - new Date(booking.start).getTime()) / (1000 * 60 * 60);
+			
+			for (const item of booking.makeupRooms) {
+				const mr = await makeupRoomRepo.findById(item.makeupRoomId.toString());
+				if (!mr) throw new Error(`Makeup room not found: ${item.makeupRoomId}`);
+				
+				// Проверка доступного количества
+				const available = (mr.totalQuantity || 0) - (mr.bookedQuantity || 0);
+				if (item.quantity > available) {
+					throw new Error(`Недостаточно гримерных "${mr.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+				}
+				
+				// Проверка времени аренды (не больше длительности брони)
+				if (item.hours > bookingDurationHours) {
+					throw new Error(`Количество часов аренды гримерной "${mr.name}" (${item.hours}ч) не может превышать длительность брони (${Math.floor(bookingDurationHours)}ч)`);
+				}
+				
+				// Минимум 1 час
+				if (item.hours < 1) {
+					throw new Error(`Минимальное время аренды гримерной - 1 час`);
+				}
+			}
+		}
+
 		// Проверка пересечения времени бронирования для зала
 		const overlap = await this.bookingRepository.findOverlap(
 			booking.roomId.toString(),
@@ -105,10 +135,20 @@ export class BookingService {
 			}))
 			: undefined;
 		
-		// Рассчёт стоимости по новым правилам: тариф комнаты по времени + оборудование
-		let computedTotal = await this.computeTotalPriceWithEquipment(
+		// Конвертируем makeupRooms в ObjectId
+		const makeupRoomsWithIds = booking.makeupRooms
+			? booking.makeupRooms.map((item) => ({
+				makeupRoomId: new ObjectId(item.makeupRoomId),
+				quantity: item.quantity,
+				hours: item.hours
+			}))
+			: undefined;
+		
+		// Рассчёт стоимости по новым правилам: тариф комнаты по времени + оборудование + гримерные
+		let computedTotal = await this.computeTotalPriceWithEquipmentAndMakeup(
 			booking.roomId.toString(),
 			booking.equipment || [],
+			booking.makeupRooms || [],
 			booking.start,
 			booking.end
 		);
@@ -148,6 +188,7 @@ export class BookingService {
 			userId: new ObjectId(userId),
 			equipmentIds,
 			equipment: equipmentWithIds,
+			makeupRooms: makeupRoomsWithIds,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			start: new Date(booking.start),
@@ -531,6 +572,78 @@ export class BookingService {
 
 		// Итоговая цена = стоимость зала (зависит от времени) + стоимость оборудования (фиксированная)
 		const total = roomTotalPrice + equipmentTotalPrice;
+		return Math.round(total * 100) / 100;
+	}
+
+	// Расчёт стоимости с учетом оборудования и гримерных
+	private async computeTotalPriceWithEquipmentAndMakeup(
+		roomId: string,
+		equipment: Array<{ equipmentId: string | ObjectId; quantity: number }>,
+		makeupRooms: Array<{ makeupRoomId: string | ObjectId; quantity: number; hours: number }>,
+		start: Date | string,
+		end: Date | string
+	): Promise<number> {
+		const room = await this.roomRepository.findById(roomId);
+		if (!room) throw new Error("Room not found");
+
+		const startDate = new Date(start);
+		const endDate = new Date(end);
+		if (!(startDate instanceof Date) || isNaN(startDate.getTime())) {
+			throw new Error("Invalid start date");
+		}
+		if (!(endDate instanceof Date) || isNaN(endDate.getTime())) {
+			throw new Error("Invalid end date");
+		}
+		if (endDate <= startDate)
+			throw new Error("End time must be after start time");
+
+		// Минимальная длительность брони
+		if (room.minBookingHours && room.minBookingHours > 0) {
+			const diffH = (endDate.getTime() - startDate.getTime()) / 36e5;
+			if (diffH + 1e-9 < room.minBookingHours) {
+				throw new Error(`Минимальное время брони для зала "${room.name}" — ${room.minBookingHours} ч.`);
+			}
+		}
+
+		// Рассчитываем стоимость оборудования: цена за сутки * quantity
+		let equipmentTotalPrice = 0;
+		for (const item of equipment) {
+			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
+			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
+			equipmentTotalPrice += eq.pricePerDay * item.quantity;
+		}
+
+		// Рассчитываем стоимость гримерных: цена за час * quantity * hours
+		let makeupRoomsTotalPrice = 0;
+		if (makeupRooms.length > 0) {
+			const { MakeupRoomMongoRepository } = require('@modules/makeup-rooms/infrastructure/makeup-room.mongo.repository');
+			const makeupRoomRepo = new MakeupRoomMongoRepository();
+			
+			for (const item of makeupRooms) {
+				const mr = await makeupRoomRepo.findById(item.makeupRoomId.toString());
+				if (!mr) throw new Error(`Makeup room not found: ${item.makeupRoomId}`);
+				makeupRoomsTotalPrice += mr.pricePerHour * item.quantity * item.hours;
+			}
+		}
+
+		// Итерация по часовым сегментам для расчёта стоимости зала
+		let roomTotalPrice = 0;
+		let cursor = new Date(startDate);
+		while (cursor < endDate) {
+			const nextHour = new Date(cursor);
+			nextHour.setMinutes(0, 0, 0);
+			if (nextHour <= cursor) nextHour.setHours(nextHour.getHours() + 1);
+			const segmentEnd = endDate < nextHour ? endDate : nextHour;
+			const segmentHours = (segmentEnd.getTime() - cursor.getTime()) / 36e5;
+
+			const roomRate = this.resolveRoomRate(room, cursor);
+			roomTotalPrice += roomRate * segmentHours;
+
+			cursor = segmentEnd;
+		}
+
+		// Итоговая цена = зал + оборудование + гримерные
+		const total = roomTotalPrice + equipmentTotalPrice + makeupRoomsTotalPrice;
 		return Math.round(total * 100) / 100;
 	}
 

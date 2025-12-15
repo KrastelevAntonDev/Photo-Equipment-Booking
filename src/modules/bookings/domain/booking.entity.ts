@@ -7,12 +7,19 @@ export interface BookingEquipment {
   quantity: number;                               // количество единиц
 }
 
+export interface BookingMakeupRoom {
+  makeupRoomId: ObjectId;                         // ID гримерной
+  quantity: number;                               // количество гримерных
+  hours: number;                                  // количество часов аренды
+}
+
 export interface Booking {
   _id?: ObjectId;                                 // появится после insertOne
   userId: ObjectId;                               // кто бронировал
   roomId: ObjectId;                               // какой зал
   equipmentIds?: ObjectId[];                      // оборудование (старый формат для совместимости)
   equipment?: BookingEquipment[];                 // оборудование с количеством (новый формат)
+  makeupRooms?: BookingMakeupRoom[];              // гримерные с количеством и часами
   start: Date;                                    // дата-время начала брони
   end: Date;                                      // дата-время окончания брони
   status: "pending" | "confirmed" | "cancelled" | "completed"; // статусы брони

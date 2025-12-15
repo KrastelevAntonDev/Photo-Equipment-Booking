@@ -11,6 +11,20 @@ export class BookingEquipmentDTO {
   quantity!: number;
 }
 
+export class BookingMakeupRoomDTO {
+  @IsString()
+  @IsNotEmpty()
+  makeupRoomId!: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity!: number;
+
+  @IsNumber()
+  @Min(1)
+  hours!: number; // количество часов аренды (не более длительности брони)
+}
+
 export class CreateBookingDTO {
   @IsString()
   @IsNotEmpty()
@@ -26,6 +40,12 @@ export class CreateBookingDTO {
   @Type(() => BookingEquipmentDTO)
   @IsOptional()
   equipment?: BookingEquipmentDTO[]; // новый формат с количеством
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BookingMakeupRoomDTO)
+  @IsOptional()
+  makeupRooms?: BookingMakeupRoomDTO[]; // гримерные с количеством и часами
 
   @IsDateString()
   start: Date;

@@ -83,6 +83,31 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           quantity: { type: 'number', minimum: 1, description: 'Количество единиц оборудования' },
         },
       },
+      BookingMakeupRoom: {
+        type: 'object',
+        required: ['makeupRoomId', 'quantity', 'hours'],
+        properties: {
+          makeupRoomId: { type: 'string', description: 'ID гримерной (ObjectId)' },
+          quantity: { type: 'number', minimum: 1, description: 'Количество гримерных' },
+          hours: { type: 'number', minimum: 1, description: 'Количество часов аренды (не более длительности брони)' },
+        },
+      },
+      MakeupRoom: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          name: { type: 'string', description: 'Название (Гримерный стол, ВИП-гримерная)' },
+          description: { type: 'string', description: 'Описание гримерной' },
+          pricePerHour: { type: 'number', description: 'Цена за час аренды' },
+          totalQuantity: { type: 'number', description: 'Общее количество' },
+          bookedQuantity: { type: 'number', description: 'Забронировано' },
+          images: { type: 'array', items: { type: 'string' }, description: 'Изображения' },
+          isAvailable: { type: 'boolean', description: 'Доступность' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          isDeleted: { type: 'boolean' },
+        },
+      },
       Booking: {
         type: 'object',
         properties: {
@@ -94,6 +119,11 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             type: 'array', 
             items: { $ref: '#/components/schemas/BookingEquipment' },
             description: 'Новый формат: оборудование с указанием количества'
+          },
+          makeupRooms: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/BookingMakeupRoom' },
+            description: 'Гримерные с указанием количества и часов'
           },
           start: { type: 'string', format: 'date-time' },
           end: { type: 'string', format: 'date-time' },
@@ -158,6 +188,11 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             items: { $ref: '#/components/schemas/BookingEquipment' },
             description: 'Новый формат: оборудование с указанием количества. Если указан, то equipmentIds игнорируется'
           },
+          makeupRooms: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/BookingMakeupRoom' },
+            description: 'Гримерные с количеством и часами аренды'
+          },
           status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled'], description: 'Статус бронирования (опционально)' },
           promocode: { type: 'string', description: 'Промокод для получения скидки' },
         },
@@ -169,11 +204,14 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           start: '2025-12-20T10:00:00.000Z',
           end: '2025-12-20T18:00:00.000Z',
           type: 'photo',
-          people: '11-20',
+          people: '21-30',
           paymentMethod: 'card-50',
           entityType: 'individual',
           services: [],
           equipmentIds: [],
+          makeupRooms: [
+            { makeupRoomId: '507f1f77bcf86cd799439012', quantity: 1, hours: 3 }
+          ],
           promocode: 'DISCOUNT10'
         }
       },
@@ -1548,6 +1586,113 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           '200': { description: 'Updated' },
           '400': { description: 'Ошибка валидации' },
           '404': { description: 'Оборудование не найдено' },
+        },
+      },
+    },
+    // Makeup Rooms
+    '/makeup-rooms': {
+      get: {
+        tags: ['Makeup Rooms'],
+        summary: 'Список гримерных',
+        description: 'Получить список всех доступных гримерных (столы и ВИП-гримерная)',
+        responses: {
+          '200': {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { $ref: '#/components/schemas/MakeupRoom' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/makeup-rooms/{id}': {
+      get: {
+        tags: ['Makeup Rooms'],
+        summary: 'Получить гримерную по ID',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'OK',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/MakeupRoom' } } },
+          },
+          '404': { description: 'Гримерная не найдена' },
+        },
+      },
+    },
+    '/admin/makeup-rooms': {
+      post: {
+        tags: ['Makeup Rooms'],
+        summary: 'Создать гримерную (админ)',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'pricePerHour', 'totalQuantity'],
+                properties: {
+                  name: { type: 'string', example: 'Гримерный стол' },
+                  description: { type: 'string', example: 'Профессиональный гримерный стол с зеркалом' },
+                  pricePerHour: { type: 'number', example: 500 },
+                  totalQuantity: { type: 'number', example: 5 },
+                  images: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Created' },
+          '400': { description: 'Ошибка валидации' },
+        },
+      },
+    },
+    '/admin/makeup-rooms/{id}': {
+      put: {
+        tags: ['Makeup Rooms'],
+        summary: 'Обновить гримерную (админ)',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  pricePerHour: { type: 'number' },
+                  totalQuantity: { type: 'number' },
+                  images: { type: 'array', items: { type: 'string' } },
+                  isAvailable: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Updated' },
+          '404': { description: 'Гримерная не найдена' },
+        },
+      },
+      delete: {
+        tags: ['Makeup Rooms'],
+        summary: 'Удалить гримерную (админ)',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '204': { description: 'Deleted' },
+          '404': { description: 'Гримерная не найдена' },
         },
       },
     },
