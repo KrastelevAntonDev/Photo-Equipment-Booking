@@ -5,9 +5,9 @@ import { sanitizeFolderName } from '@shared/utils/folder.utils';
 import fs from 'fs';
 import path from 'path';
 
-// Нормализация имени для сравнения
+// Нормализация имени для сравнения (используем ту же логику что и в sanitizeFolderName)
 function normalize(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, '_');
+  return sanitizeFolderName(name).toLowerCase();
 }
 
 // Сканирование файлов в папке
