@@ -175,7 +175,8 @@ volumes:
   redis_data:
     driver: local
   uploads_data:
-    driver: local
+    external: true  # Защита от случайного удаления при docker compose down -v
+    name: apipicassostudioru_uploads_data
   api_dev_node_modules:
     driver: local
 

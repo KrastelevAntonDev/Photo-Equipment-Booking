@@ -24,7 +24,13 @@ services:
 
 volumes:
   uploads_data:
-    driver: local
+    external: true  # Защита от случайного удаления
+    name: apipicassostudioru_uploads_data
+```
+
+### 4. ✅ Volume создаётся вручную (один раз):
+```bash
+docker volume create apipicassostudioru_uploads_data
 ```
 
 ---
@@ -99,17 +105,23 @@ curl http://localhost:5000/health
 
 ---
 
-## ⚠️ ЕДИНСТВЕННОЕ ПРАВИЛО
+## ⚠️ ЗАЩИТА ОТ СЛУЧАЙНОГО УДАЛЕНИЯ
 
-**НЕ используйте:**
+Volume помечен как `external: true` - это означает:
+
+**Даже если выполнить:**
 ```bash
-docker compose down -v  # ❌ Флаг -v удалит volume!
+docker compose down -v  # ❌ Опасная команда
 ```
 
-**Используйте:**
+**Volume НЕ будет удалён!** Потому что он внешний (external).
+
+### Единственный способ удалить volume:
 ```bash
-docker compose down  # ✅ Без флага -v
+docker volume rm apipicassostudioru_uploads_data  # Только явная команда
 ```
+
+**Рекомендация:** Всё равно используйте `docker compose down` без `-v` для безопасности.
 
 ---
 
