@@ -44,11 +44,13 @@ async function seedMakeupRooms() {
 
 // Если запускается напрямую
 if (require.main === module) {
-  const { connectDB, closeDB } = require('@/config/database');
+  const { connectDB } = require('@/config/database');
   connectDB()
     .then(() => seedMakeupRooms())
-    .then(() => closeDB())
-    .then(() => process.exit(0))
+    .then(() => {
+      console.log('✅ Seed completed');
+      process.exit(0);
+    })
     .catch((err: Error) => {
       console.error('❌ Seed failed:', err);
       process.exit(1);

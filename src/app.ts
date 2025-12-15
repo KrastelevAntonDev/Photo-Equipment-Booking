@@ -159,11 +159,44 @@ app.use('/public', express.static(publicDir, {
 // Health Check
 // --------------------------------------------------
 app.get('/health', (_req, res) => {
+  // Проверка доступности uploads директории
+  const uploadsAccessible = fs.existsSync(
+    path.join(__dirname, 'public', 'uploads')
+  );
+  
+  // Подсчёт файлов в uploads (для мониторинга)
+  let uploadFileCount = 0;
+  try {
+    const uploadsPath = path.join(__dirname, 'public', 'uploads');
+    const countFiles = (dir: string): number => {
+      let count = 0;
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        if (item.isDirectory()) {
+          count += countFiles(path.join(dir, item.name));
+        } else {
+          count++;
+        }
+      }
+      return count;
+    };
+    if (uploadsAccessible) {
+      uploadFileCount = countFiles(uploadsPath);
+    }
+  } catch (err) {
+    // Игнорируем ошибки подсчёта
+  }
+  
   res.status(200).json({
     status: 'ok',
     uptime: process.uptime(),
     timestamp: Date.now(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    uploads: {
+      accessible: uploadsAccessible,
+      fileCount: uploadFileCount,
+      path: '/app/dist/public/uploads'
+    }
   });
 });
 
