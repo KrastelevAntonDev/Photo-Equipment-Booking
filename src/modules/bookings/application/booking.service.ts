@@ -138,7 +138,7 @@ export class BookingService {
 
 		const newBody = {
 			...booking,
-			status: "pending",
+			status: booking.status || "pending",
 			roomId: new ObjectId(booking.roomId),
 			userId: new ObjectId(userId),
 			equipmentIds,
@@ -156,6 +156,12 @@ export class BookingService {
 			isPaid: false,
 			paidAmount: 0,
 			paymentStatus: 'unpaid',
+			// Новые поля
+			type: booking.type,
+			people: booking.people,
+			bookingPaymentMethod: booking.paymentMethod,
+			services: booking.services ? booking.services.map((id) => new ObjectId(id)) : undefined,
+			entityType: booking.entityType,
 		} as Booking;
 		const newBooking = await this.bookingRepository.createBooking(newBody);
 

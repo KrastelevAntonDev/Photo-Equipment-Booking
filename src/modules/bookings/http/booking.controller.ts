@@ -3,14 +3,23 @@ import { BookingService } from '../application/booking.service';
 import { BookingWithUser } from '../domain/booking.entity';
 import { RoomService } from '../../rooms/application/room.service';
 import { UserJwtPayload } from '../../users/domain/user.entity';
+import { UserService } from '../../users/application/user.service';
+
+interface GuestUserData {
+  clientEmail: string;
+  clientPhone: string;
+  clientFio: string;
+}
 
 export class BookingController {
   private bookingService: BookingService;
 	private roomService: RoomService;
+  private userService: UserService;
 
   constructor() {
     this.bookingService = new BookingService();
 		this.roomService = new RoomService();
+    this.userService = new UserService();
   }
 
   async getAllBookings(req: Request, res: Response) {
@@ -23,9 +32,47 @@ export class BookingController {
     }
   }
 
-  async createBooking(req: Request & {user?: UserJwtPayload}, res: Response) {
+  async createBooking(req: Request & {user?: UserJwtPayload; guestUser?: GuestUserData}, res: Response) {
     try {
-      const booking: BookingWithUser = { ...req.body, user: req.user };
+      let userPayload: UserJwtPayload;
+
+      // Если есть авторизованный пользователь - используем его
+      if (req.user) {
+        userPayload = req.user;
+      } 
+      // Если нет авторизации - создаем/находим пользователя по данным из запроса
+      else if (req.guestUser) {
+        const guestData = req.guestUser;
+        
+        // Проверяем, существует ли пользователь с таким email
+        const userRepo = new (require('../../users/infrastructure/user.mongo.repository').UserMongoRepository)();
+        let user = await userRepo.findByEmail(guestData.clientEmail);
+
+        // Если пользователь не существует - создаем нового
+        if (!user) {
+          user = await this.userService.createUserByAdmin({
+            email: guestData.clientEmail,
+            phone: guestData.clientPhone,
+            fullName: guestData.clientFio,
+          });
+        }
+
+        // Формируем userPayload из созданного/найденного пользователя
+        userPayload = {
+          userId: user._id!.toString(),
+          email: user.email,
+          phone: user.phone || '',
+          fullName: user.fullName,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 86400, // 24 часа
+        };
+      } 
+      else {
+        res.status(401).json({ message: 'Требуется авторизация или данные клиента' });
+        return;
+      }
+
+      const booking: BookingWithUser = { ...req.body, user: userPayload };
       const newBooking = await this.bookingService.createBooking(booking);
       res.status(201).json(newBooking);
     } catch (error) {

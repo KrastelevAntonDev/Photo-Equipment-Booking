@@ -28,6 +28,13 @@ export interface Booking {
   isHalfPaid?: boolean;                           // признак половинной оплаты (около 50%)
   user?: UserJwtPayload;                          // данные пользователя (для отображения без джоина)
   
+  // Новые поля
+  type?: 'photo' | 'video' | 'event';             // тип съёмки
+  people?: 'up-to-10' | 'more-than-10' | 'more-than-20' | 'more-than-50'; // количество человек
+  bookingPaymentMethod?: 'card-50' | 'card-full' | 'invoice'; // способ оплаты из формы
+  services?: ObjectId[];                          // дополнительные услуги
+  entityType?: 'individual' | 'company';          // тип клиента
+  
   // Уведомления
   notificationsSent?: string[];                   // типы отправленных уведомлений
   cancelledAt?: Date;                             // время автоматической отмены

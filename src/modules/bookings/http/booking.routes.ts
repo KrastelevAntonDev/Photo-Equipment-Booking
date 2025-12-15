@@ -3,6 +3,7 @@ import { BookingController } from './booking.controller';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { CreateBookingDTO } from './create-booking.dto';
 import { authMiddleware } from '@shared/middlewares/auth.middleware';
+import { optionalAuthMiddleware } from '@shared/middlewares/optional-auth.middleware';
 import { requireAdminLevel } from '@shared/middlewares/admin.middleware';
 import { UpdateBookingDTO } from './update-booking.dto';
 import { AdminCreateBookingDTO } from './admin-create-booking.dto';
@@ -11,7 +12,7 @@ const router = Router();
 const bookingController = new BookingController();
 
 router.get('/bookings', authMiddleware, (req, res) => bookingController.getAllBookings(req, res));
-router.post('/bookings', authMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
+router.post('/bookings', optionalAuthMiddleware, validateDTO(CreateBookingDTO), (req, res) => {
 	bookingController.createBooking(req, res)
 });
 router.get('/get-booking-info-by-room/:id', authMiddleware, (req, res) => {
@@ -34,4 +35,4 @@ router.put('/bookings/:id', requireAdminLevel('partial'), validateDTO(UpdateBook
 router.post('/admin/create-booking', requireAdminLevel('partial'), validateDTO(AdminCreateBookingDTO), (req, res) => {
 	bookingController.adminCreateBooking(req, res);
 });
-export default router;	
+export default router;

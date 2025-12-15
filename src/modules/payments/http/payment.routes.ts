@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { CreatePaymentRequest, Currency, ConfirmationType, PaymentMethodType } from '@infrastructure/external/yookassa/yookassa.types';
-import { authMiddleware } from '@shared/middlewares/auth.middleware';
+import { optionalAuthMiddleware } from '@shared/middlewares/optional-auth.middleware';
 import { requireAdminLevel } from '@/shared/middlewares/admin.middleware';
 import { UserJwtPayload } from '@modules/users/domain/user.entity';
 import { PaymentService } from '../application/payment.service';
@@ -9,67 +9,87 @@ import { createPaymentProvider } from '@modules/payments/infrastructure/provider
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { AdminCreatePaymentDTO } from './admin-create-payment.dto';
 import { normalizePhone } from '@shared/utils/phone.utils';
+import { UserService } from '@modules/users/application/user.service';
+
+interface GuestUserData {
+  clientEmail: string;
+  clientPhone: string;
+  clientFio: string;
+}
 
 const router = Router();
 const yookassaService = createPaymentProvider();
 const paymentService = new PaymentService()
 const bookingService = new BookingService()
-// Create payment
-router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwtPayload }, res: Response) => {
-	console.log('req.body', req.body);
-	console.log('req.user', req.user);
-	console.log('req.headers', req.headers);
-	console.log('req.params', req.params);
-	console.log('req.query', req.query);
-	console.log('req.path', req.path);
-	console.log('req.route', req.route);
-	console.log('req.originalUrl', req.originalUrl);
-	console.log('req.baseUrl', req.baseUrl);
-	console.log('req.hostname', req.hostname);
-	console.log('req.protocol', req.protocol);
-	console.log('req.secure', req.secure);
-	console.log('req.ip', req.ip);
-	console.log('start payment route');
+const userService = new UserService()
 
-  if(!req.user) {
-	console.log('Unauthorized');
-    res.status(401).json({ message: 'Unauthorized' });
-    return
-  }
-  if(!req.body.bookingId) {
-	console.log('Booking ID is required');
-      res.status(400).json({ message: 'Booking ID is required' });
-      return
-  }
+// Create payment
+router.post('/payments', optionalAuthMiddleware,  async (req: Request & { user?: UserJwtPayload; guestUser?: GuestUserData }, res: Response) => {
   try {
-	console.log('Getting booking by ID', req.body.bookingId);
+    let userPayload: UserJwtPayload;
+
+    // Если есть авторизованный пользователь - используем его
+    if (req.user) {
+      userPayload = req.user;
+    }
+    // Если нет авторизации - создаем/находим пользователя по данным из запроса
+    else if (req.guestUser) {
+      const guestData = req.guestUser;
+
+      // Проверяем, существует ли пользователь с таким email
+      const { UserMongoRepository } = require('@modules/users/infrastructure/user.mongo.repository');
+      const userRepository = new UserMongoRepository();
+      let user = await userRepository.findByEmail(guestData.clientEmail);
+
+      // Если пользователь не существует - создаем нового
+      if (!user) {
+        user = await userService.createUserByAdmin({
+          email: guestData.clientEmail,
+          phone: guestData.clientPhone,
+          fullName: guestData.clientFio,
+        });
+      }
+
+      // Формируем userPayload из созданного/найденного пользователя
+      userPayload = {
+        userId: user._id!.toString(),
+        email: user.email,
+        phone: user.phone || '',
+        fullName: user.fullName,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 86400,
+      };
+    } else {
+      res.status(401).json({ message: 'Требуется авторизация или данные клиента' });
+      return;
+    }
+
+    if (!req.body.bookingId) {
+      res.status(400).json({ message: 'Booking ID is required' });
+      return;
+    }
+
     const booking = await bookingService.getBookingById(req.body.bookingId);
     if (!booking) {
-	console.log('Booking not found');
       res.status(404).json({ message: 'Booking not found' });
       return;
     }
 
     if (booking.isDeleted || booking.status === 'cancelled') {
-	console.log('Booking is not available for payment');
       res.status(400).json({ message: 'Booking is not available for payment' });
       return;
     }
-	console.log('Booking is available for payment');
+
     const method = (req.body.method as string | undefined) || 'online';
-	console.log('Method', method);
     const paymentOption = (req.body.paymentOption as string | undefined) || 'full'; // 'full' | 'half'
-	console.log('Payment option', paymentOption);
-    // Обработка оплаты на месте: не создаём плтёж в YooKassa
+    
+    // Обработка оплаты на месте: не создаём платёж в YooKassa
     if (method === 'on_site_cash' || method === 'on_site_card') {
-	console.log('Setting on site payment');
       const updated = await bookingService.setOnSitePayment(req.body.bookingId, method);
       if (!updated) {
-	console.log('Booking not found');
         res.status(404).json({ message: 'Booking not found' });
         return;
       }
-	console.log('On site payment set');
       res.status(201).json({
         status: 'on_site_selected',
         method,
@@ -108,7 +128,7 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
       capture: req.body.capture ?? true,
       description: req.body.description || 'Payment for booking',
       metadata: {
-        userId: req.user.userId,
+        userId: userPayload.userId,
         bookingId: req.body.bookingId,
         paymentOption,
       },
@@ -125,15 +145,13 @@ router.post('/payments', authMiddleware,  async (req: Request & { user?: UserJwt
           payment_mode: 'full_payment'
         }],
         customer: {
-          email: req.user.email,
-          phone: req.user.phone ? normalizePhone(req.user.phone) : undefined,
+          email: userPayload.email,
+          phone: userPayload.phone ? normalizePhone(userPayload.phone) : undefined,
         }
       }
       // Add other fields from req.body as needed
     };
-	console.log('Creating payment', payload);
     const payment = await yookassaService.createPayment(payload);
-	console.log('Payment created', payment);
     res.status(201).json(payment);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
