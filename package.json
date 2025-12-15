@@ -15,7 +15,8 @@
     "seed:rooms-pricing": "ts-node -r tsconfig-paths/register src/seed/rooms.pricing.seed.ts",
     "seed:remove-fri-pricing": "ts-node -r tsconfig-paths/register src/seed/remove-fri-pricing.seed.ts",
     "seed:rename-equipment-price": "ts-node -r tsconfig-paths/register src/seed/rename-equipment-price-field.seed.ts",
-    "seed:set-rooms-available": "ts-node -r tsconfig-paths/register src/seed/set-rooms-available.seed.ts"
+    "seed:set-rooms-available": "ts-node -r tsconfig-paths/register src/seed/set-rooms-available.seed.ts",
+    "migrate:folders": "ts-node -r tsconfig-paths/register src/scripts/migrate-folders.ts"
   },
   "repository": {
     "type": "git",
