@@ -64,8 +64,17 @@ export async function optionalAuthMiddleware(
     return;
   }
 
-  // Нормализуем телефон
-  const normalizedPhone = normalizePhone(clientPhone);
+  // Нормализуем телефон: 89260968886 -> +79260968886
+  let normalizedPhone = clientPhone.trim();
+  if (normalizedPhone.startsWith('8') && normalizedPhone.length === 11) {
+    normalizedPhone = '+7' + normalizedPhone.substring(1);
+  } else if (normalizedPhone.startsWith('9') && normalizedPhone.length === 10) {
+    normalizedPhone = '+7' + normalizedPhone;
+  } else if (!normalizedPhone.startsWith('+')) {
+    normalizedPhone = '+' + normalizedPhone;
+  }
+  
+  normalizedPhone = normalizePhone(normalizedPhone);
 
   // Проверяем формат email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
