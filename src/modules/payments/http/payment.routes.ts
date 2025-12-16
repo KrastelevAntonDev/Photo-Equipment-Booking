@@ -8,6 +8,7 @@ import { BookingService } from '@modules/bookings/application/booking.service';
 import { createPaymentProvider } from '@modules/payments/infrastructure/provider.factory';
 import { validateDTO } from '@shared/middlewares/validation.middleware';
 import { AdminCreatePaymentDTO } from './admin-create-payment.dto';
+import { CreatePaymentForAddedItemsDTO } from './create-payment-for-added-items.dto';
 import { normalizePhone } from '@shared/utils/phone.utils';
 import { UserService } from '@modules/users/application/user.service';
 
@@ -287,6 +288,112 @@ router.post('/admin/payments', requireAdminLevel('partial'), validateDTO(AdminCr
         reason: discountReason,
         originalAmount: outstanding,
         finalAmount: finalAmount,
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Create payment for items added to existing booking
+router.post('/admin/payments/added-items', requireAdminLevel('partial'), validateDTO(CreatePaymentForAddedItemsDTO), async (req: Request, res: Response) => {
+  try {
+    const { bookingId, additionalAmount, discountAmount = 0, discountReason, return_url, description } = req.body;
+
+    // Получаем бронирование
+    const booking = await bookingService.getBookingById(bookingId);
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+
+    // Получаем пользователя для чека
+    const { UserMongoRepository } = require('@modules/users/infrastructure/user.mongo.repository');
+    const userRepository = new UserMongoRepository();
+    const user = await userRepository.findById(booking.userId.toString());
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Проверяем, что бронирование уже оплачено
+    const isPaid = booking.isPaid || booking.paymentStatus === 'paid';
+    
+    // Рассчитываем финальную сумму
+    let finalAmount: number;
+    let paymentDescription: string;
+
+    if (isPaid) {
+      // Если бронирование оплачено - платим только за добавленные позиции
+      finalAmount = Math.max(0, additionalAmount - discountAmount);
+      paymentDescription = description || `Оплата дополнительного оборудования/гримерных`;
+    } else {
+      // Если не оплачено - платим за всё (весь totalPrice уже обновлен в бронировании)
+      const alreadyPaid = booking.paidAmount ?? 0;
+      const outstanding = Math.max(0, booking.totalPrice - alreadyPaid);
+      finalAmount = Math.max(0, outstanding - discountAmount);
+      paymentDescription = description || `Оплата бронирования (включая добавленное оборудование/гримерные)`;
+    }
+
+    if (discountAmount > 0) {
+      paymentDescription += ` (скидка ${discountAmount} руб${discountReason ? `: ${discountReason}` : ''})`;
+    }
+
+    const amountValue = finalAmount.toFixed(2);
+
+    const payload: CreatePaymentRequest = {
+      amount: {
+        value: amountValue,
+        currency: Currency.RUB,
+      },
+      payment_method_data: {
+        type: PaymentMethodType.Sbp
+      },
+      confirmation: {
+        type: ConfirmationType.Redirect,
+        return_url: return_url || 'http://picassostudio.ru/',
+      },
+      capture: true,
+      description: paymentDescription,
+      metadata: {
+        userId: booking.userId.toString(),
+        bookingId: bookingId,
+        paymentOption: isPaid ? 'additional_items' : 'full',
+        additionalItemsAmount: additionalAmount.toString(),
+        adminDiscount: discountAmount.toString(),
+        adminDiscountReason: discountReason || '',
+        isPaidBooking: isPaid.toString(),
+      },
+      receipt: {
+        items: [{
+          description: paymentDescription,
+          amount: {
+            value: amountValue,
+            currency: Currency.RUB,
+          },
+          quantity: 1,
+          vat_code: 1,
+          payment_subject: 'service',
+          payment_mode: 'full_payment'
+        }],
+        customer: {
+          email: user.email,
+          phone: user.phone ? normalizePhone(user.phone) : undefined,
+        }
+      }
+    };
+
+    const payment = await yookassaService.createPayment(payload);
+    
+    res.status(201).json({
+      payment,
+      paymentInfo: {
+        isPaidBooking: isPaid,
+        additionalAmount,
+        discount: discountAmount,
+        discountReason,
+        finalAmount,
+        description: paymentDescription,
       }
     });
   } catch (err: any) {

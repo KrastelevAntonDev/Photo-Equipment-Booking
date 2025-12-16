@@ -18,7 +18,7 @@ export interface IBookingRepository {
   ): Promise<Booking | null>;
   updatePartial(
 		id: string,
-		update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
+		update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
   ): Promise<Booking | null>;
 }
 

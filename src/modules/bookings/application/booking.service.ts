@@ -777,4 +777,120 @@ export class BookingService {
 			room.pricePerHour,
 		);
 	}
+
+	/**
+	 * Добавление оборудования и/или гримерных комнат к существующему бронированию
+	 * Логика оплаты:
+	 * - Если бронирование уже оплачено (isPaid=true) - создаем счет только на добавленные позиции
+	 * - Если бронирование не оплачено - обновляем totalPrice и создаем счет на всю сумму
+	 */
+	async addItemsToBooking(
+		bookingId: string,
+		equipment?: Array<{ equipmentId: string; quantity: number }>,
+		makeupRooms?: Array<{ makeupRoomId: string; quantity: number; hours: number }>
+	): Promise<{ booking: Booking; additionalPrice: number }> {
+		// Получаем бронирование
+		const booking = await this.bookingRepository.findById(bookingId);
+		if (!booking) {
+			throw new Error('Booking not found');
+		}
+
+		if (booking.status === 'cancelled' || booking.isDeleted) {
+			throw new Error('Cannot add items to cancelled or deleted booking');
+		}
+
+		// Проверка и расчет стоимости нового оборудования
+		let additionalEquipmentPrice = 0;
+		const newEquipment: Array<{ equipmentId: ObjectId; quantity: number }> = [];
+
+		if (equipment && equipment.length > 0) {
+			for (const item of equipment) {
+				const eq = await this.equipmentRepository.findById(item.equipmentId);
+				if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
+
+				// Проверка доступного количества
+				if (eq.totalQuantity && eq.totalQuantity > 0) {
+					const available = (eq.totalQuantity || 0) - (eq.bookedQuantity || 0);
+					if (item.quantity > available) {
+						throw new Error(`Недостаточно единиц оборудования "${eq.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+					}
+				}
+
+				additionalEquipmentPrice += eq.pricePerDay * item.quantity;
+				newEquipment.push({
+					equipmentId: new ObjectId(item.equipmentId),
+					quantity: item.quantity
+				});
+			}
+		}
+
+		// Проверка и расчет стоимости новых гримерных
+		let additionalMakeupRoomsPrice = 0;
+		const newMakeupRooms: Array<{ makeupRoomId: ObjectId; quantity: number; hours: number }> = [];
+
+		if (makeupRooms && makeupRooms.length > 0) {
+			const { MakeupRoomMongoRepository } = require('@modules/makeup-rooms/infrastructure/makeup-room.mongo.repository');
+			const makeupRoomRepo = new MakeupRoomMongoRepository();
+
+			// Рассчитываем длительность брони в часах
+			const bookingDurationHours = (new Date(booking.end).getTime() - new Date(booking.start).getTime()) / (1000 * 60 * 60);
+
+			for (const item of makeupRooms) {
+				const mr = await makeupRoomRepo.findById(item.makeupRoomId);
+				if (!mr) throw new Error(`Makeup room not found: ${item.makeupRoomId}`);
+
+				// Проверка доступного количества
+				const available = (mr.totalQuantity || 0) - (mr.bookedQuantity || 0);
+				if (item.quantity > available) {
+					throw new Error(`Недостаточно гримерных "${mr.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+				}
+
+				// Проверка времени аренды
+				if (item.hours > bookingDurationHours) {
+					throw new Error(`Количество часов аренды гримерной "${mr.name}" (${item.hours}ч) не может превышать длительность брони (${Math.floor(bookingDurationHours)}ч)`);
+				}
+
+				if (item.hours < 1) {
+					throw new Error(`Минимальное время аренды гримерной - 1 час`);
+				}
+
+				additionalMakeupRoomsPrice += mr.pricePerHour * item.quantity * item.hours;
+				newMakeupRooms.push({
+					makeupRoomId: new ObjectId(item.makeupRoomId),
+					quantity: item.quantity,
+					hours: item.hours
+				});
+			}
+		}
+
+		// Общая дополнительная стоимость
+		const additionalPrice = additionalEquipmentPrice + additionalMakeupRoomsPrice;
+
+		// Объединяем существующее и новое оборудование
+		const existingEquipment = booking.equipment || [];
+		const mergedEquipment = [...existingEquipment, ...newEquipment];
+
+		// Объединяем существующие и новые гримерные
+		const existingMakeupRooms = booking.makeupRooms || [];
+		const mergedMakeupRooms = [...existingMakeupRooms, ...newMakeupRooms];
+
+		// Обновляем бронирование
+		const updatedFields: Partial<Booking> = {
+			equipment: mergedEquipment.length > 0 ? mergedEquipment : undefined,
+			makeupRooms: mergedMakeupRooms.length > 0 ? mergedMakeupRooms : undefined,
+			totalPrice: booking.totalPrice + additionalPrice,
+			updatedAt: new Date()
+		};
+
+		// Обновляем бронирование в БД
+		const updatedBooking = await this.bookingRepository.updatePartial(bookingId, updatedFields);
+		if (!updatedBooking) {
+			throw new Error('Failed to update booking');
+		}
+
+		return {
+			booking: updatedBooking,
+			additionalPrice
+		};
+	}
 }

@@ -155,4 +155,51 @@ export class BookingController {
       res.status(status).json({ message: errorMessage });
     }
   }
+
+  /**
+   * Добавление оборудования и/или мейкап-комнат к существующему бронированию
+   */
+  async addItemsToBooking(req: Request, res: Response) {
+    try {
+      const { bookingId, equipment, makeupRooms } = req.body;
+
+      if (!bookingId) {
+        return res.status(400).json({ message: 'bookingId is required' });
+      }
+
+      if ((!equipment || equipment.length === 0) && (!makeupRooms || makeupRooms.length === 0)) {
+        return res.status(400).json({ message: 'At least one item (equipment or makeupRoom) must be provided' });
+      }
+
+      const result = await this.bookingService.addItemsToBooking(
+        bookingId,
+        equipment,
+        makeupRooms
+      );
+
+      // Определяем логику оплаты
+      const booking = result.booking;
+      const isPaid = booking.isPaid || booking.paymentStatus === 'paid';
+
+      res.status(200).json({
+        message: 'Items added successfully',
+        booking: result.booking,
+        additionalPrice: result.additionalPrice,
+        paymentRequired: result.additionalPrice > 0,
+        paymentInfo: {
+          // Если бронирование уже оплачено - платим только за новые позиции
+          // Если не оплачено - платим за всё
+          amountToPay: isPaid ? result.additionalPrice : booking.totalPrice,
+          description: isPaid 
+            ? 'Оплата дополнительного оборудования/гримерных' 
+            : 'Оплата бронирования (включая добавленное оборудование/гримерные)',
+          isPaidBooking: isPaid
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const status = /not found|cancelled|deleted|Недостаточно|превышать|Минимальное/.test(errorMessage) ? 400 : 500;
+      res.status(status).json({ message: errorMessage });
+    }
+  }
 }

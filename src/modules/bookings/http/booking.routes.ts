@@ -7,6 +7,7 @@ import { optionalAuthMiddleware } from '@shared/middlewares/optional-auth.middle
 import { requireAdminLevel } from '@shared/middlewares/admin.middleware';
 import { UpdateBookingDTO } from './update-booking.dto';
 import { AdminCreateBookingDTO } from './admin-create-booking.dto';
+import { AddItemsToBookingDTO } from './add-items-to-booking.dto';
 
 const router = Router();
 const bookingController = new BookingController();
@@ -35,4 +36,10 @@ router.put('/bookings/:id', requireAdminLevel('partial'), validateDTO(UpdateBook
 router.post('/admin/create-booking', requireAdminLevel('partial'), validateDTO(AdminCreateBookingDTO), (req, res) => {
 	bookingController.adminCreateBooking(req, res);
 });
+
+// Add equipment and/or makeup rooms to existing booking (admin only)
+router.post('/admin/bookings/add-items', requireAdminLevel('partial'), validateDTO(AddItemsToBookingDTO), (req, res) => {
+	bookingController.addItemsToBooking(req, res);
+});
+
 export default router;

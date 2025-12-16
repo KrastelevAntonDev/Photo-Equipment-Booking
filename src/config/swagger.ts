@@ -263,6 +263,51 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           paymentMethod: 'on_site_card'
         }
       },
+      AddItemsToBookingDTO: {
+        type: 'object',
+        required: ['bookingId'],
+        properties: {
+          bookingId: { type: 'string', description: 'ID бронирования' },
+          equipment: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/BookingEquipment' },
+            description: 'Массив добавляемого оборудования с указанием количества'
+          },
+          makeupRooms: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/BookingMakeupRoom' },
+            description: 'Массив добавляемых гримерных с количеством и часами'
+          },
+        },
+        example: {
+          bookingId: '507f1f77bcf86cd799439012',
+          equipment: [
+            { equipmentId: '507f191e810c19729de860ea', quantity: 2 }
+          ],
+          makeupRooms: [
+            { makeupRoomId: '507f191e810c19729de860eb', quantity: 1, hours: 4 }
+          ]
+        }
+      },
+      CreatePaymentForAddedItemsDTO: {
+        type: 'object',
+        required: ['bookingId', 'additionalAmount'],
+        properties: {
+          bookingId: { type: 'string', description: 'ID бронирования' },
+          additionalAmount: { type: 'number', minimum: 0, description: 'Стоимость добавленных позиций' },
+          discountAmount: { type: 'number', minimum: 0, description: 'Размер скидки (опционально)' },
+          discountReason: { type: 'string', description: 'Причина скидки (опционально)' },
+          return_url: { type: 'string', format: 'uri', description: 'URL для возврата после оплаты (опционально)' },
+          description: { type: 'string', description: 'Описание платежа (опционально)' },
+        },
+        example: {
+          bookingId: '507f1f77bcf86cd799439012',
+          additionalAmount: 3000,
+          discountAmount: 500,
+          discountReason: 'Скидка постоянному клиенту',
+          return_url: 'https://picassostudio.ru/success'
+        }
+      },
       CreateFormDTO: {
         type: 'object',
         required: ['name', 'phone', 'servicesType', 'textarea', 'checkbox', 'formType'],
@@ -1521,6 +1566,84 @@ export const openapiSpec: OpenAPIV3_1.Document = {
         },
       },
     },
+    '/admin/bookings/add-items': {
+      post: {
+        tags: ['Bookings'],
+        summary: 'Добавить оборудование/гримерные к бронированию (админ)',
+        description: 'Добавление дополнительного оборудования и/или гримерных комнат к существующему бронированию.\n\n**Логика оплаты:**\n- Если бронирование **уже оплачено** (isPaid=true) → создается счет **только на добавленные позиции**\n- Если бронирование **не оплачено** → создается счет на **всю сумму** (старая стоимость + новые позиции)\n\n**Валидация:**\n- Проверка доступности оборудования/гримерных\n- Время аренды гримерной не должно превышать длительность бронирования\n- Минимум 1 час для гримерной\n- Нельзя добавлять к отмененным бронированиям',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { 
+              schema: { $ref: '#/components/schemas/AddItemsToBookingDTO' },
+              examples: {
+                equipmentOnly: {
+                  summary: 'Только оборудование',
+                  value: {
+                    bookingId: '507f1f77bcf86cd799439012',
+                    equipment: [
+                      { equipmentId: '507f191e810c19729de860ea', quantity: 2 },
+                      { equipmentId: '507f191e810c19729de860eb', quantity: 1 }
+                    ]
+                  }
+                },
+                makeupRoomsOnly: {
+                  summary: 'Только гримерные',
+                  value: {
+                    bookingId: '507f1f77bcf86cd799439012',
+                    makeupRooms: [
+                      { makeupRoomId: '507f191e810c19729de860ec', quantity: 1, hours: 4 }
+                    ]
+                  }
+                },
+                both: {
+                  summary: 'Оборудование и гримерные',
+                  value: {
+                    bookingId: '507f1f77bcf86cd799439012',
+                    equipment: [
+                      { equipmentId: '507f191e810c19729de860ea', quantity: 2 }
+                    ],
+                    makeupRooms: [
+                      { makeupRoomId: '507f191e810c19729de860ec', quantity: 1, hours: 3 }
+                    ]
+                  }
+                }
+              }
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Позиции успешно добавлены',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Items added successfully' },
+                    booking: { $ref: '#/components/schemas/Booking' },
+                    additionalPrice: { type: 'number', example: 3000, description: 'Стоимость добавленных позиций' },
+                    paymentRequired: { type: 'boolean', example: true },
+                    paymentInfo: {
+                      type: 'object',
+                      properties: {
+                        amountToPay: { type: 'number', example: 3000, description: 'Сумма к оплате (только новое или всё)' },
+                        description: { type: 'string', example: 'Оплата дополнительного оборудования/гримерных' },
+                        isPaidBooking: { type: 'boolean', example: true, description: 'Было ли бронирование оплачено до добавления' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации, недостаточно позиций, превышено время аренды или бронирование отменено' },
+          '403': { description: 'Недостаточно прав (требуется роль администратора)' },
+          '404': { description: 'Бронирование не найдено' },
+        },
+      },
+    },
     // Forms
     '/forms': { get: { tags: ['Forms'], summary: 'Список форм', responses: { '200': { description: 'OK' } } } },
     '/form': {
@@ -1754,6 +1877,94 @@ export const openapiSpec: OpenAPIV3_1.Document = {
             }
           },
           '400': { description: 'Ошибка валидации или бронирование уже оплачено' },
+          '404': { description: 'Бронирование или пользователь не найдены' },
+          '401': { description: 'Не авторизован' },
+          '403': { description: 'Доступ запрещён (не админ)' }
+        }
+      }
+    },
+    '/admin/payments/added-items': {
+      post: {
+        tags: ['Payments'],
+        summary: 'Создать платёж за добавленные к бронированию позиции (только админ)',
+        description: 'Создание платежа за оборудование/гримерные, добавленные к существующему бронированию.\\n\\n**Логика:**\\n- Если бронирование **уже оплачено** → платим только за новые позиции (additionalAmount - discountAmount)\\n- Если бронирование **не оплачено** → платим за всё (totalPrice бронирования - discountAmount)\\n\\nПосле вызова `/admin/bookings/add-items` используйте этот endpoint для создания ссылки на оплату.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreatePaymentForAddedItemsDTO' },
+              examples: {
+                paidBooking: {
+                  summary: 'Бронирование оплачено - платим только за новое',
+                  value: {
+                    bookingId: '507f1f77bcf86cd799439012',
+                    additionalAmount: 3000,
+                    discountAmount: 500,
+                    discountReason: 'Скидка постоянному клиенту',
+                    return_url: 'https://picassostudio.ru/success'
+                  }
+                },
+                unpaidBooking: {
+                  summary: 'Бронирование не оплачено - платим за всё',
+                  value: {
+                    bookingId: '507f1f77bcf86cd799439012',
+                    additionalAmount: 4000,
+                    return_url: 'https://picassostudio.ru/success'
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Платёж создан успешно',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    payment: {
+                      type: 'object',
+                      description: 'Объект платежа от YooKassa с ссылкой на оплату'
+                    },
+                    paymentInfo: {
+                      type: 'object',
+                      properties: {
+                        isPaidBooking: { type: 'boolean', description: 'Было ли бронирование оплачено до добавления позиций' },
+                        additionalAmount: { type: 'number', description: 'Стоимость добавленных позиций' },
+                        discount: { type: 'number', description: 'Размер скидки' },
+                        discountReason: { type: 'string', description: 'Причина скидки' },
+                        finalAmount: { type: 'number', description: 'Итоговая сумма к оплате' },
+                        description: { type: 'string', description: 'Описание платежа' }
+                      }
+                    }
+                  }
+                },
+                example: {
+                  payment: {
+                    id: '2d8ea3a9-000f-5000-8000-1d885f9f35e7',
+                    status: 'pending',
+                    amount: { value: '2500.00', currency: 'RUB' },
+                    confirmation: {
+                      type: 'redirect',
+                      confirmation_url: 'https://yoomoney.ru/checkout/payments/v2/contract?orderId=2d8ea3a9-000f-5000-8000-1d885f9f35e7'
+                    }
+                  },
+                  paymentInfo: {
+                    isPaidBooking: true,
+                    additionalAmount: 3000,
+                    discount: 500,
+                    discountReason: 'Скидка постоянному клиенту',
+                    finalAmount: 2500,
+                    description: 'Оплата дополнительного оборудования/гримерных (скидка 500 руб: Скидка постоянному клиенту)'
+                  }
+                }
+              }
+            }
+          },
+          '400': { description: 'Ошибка валидации' },
           '404': { description: 'Бронирование или пользователь не найдены' },
           '401': { description: 'Не авторизован' },
           '403': { description: 'Доступ запрещён (не админ)' }

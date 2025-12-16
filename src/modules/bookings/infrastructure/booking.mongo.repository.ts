@@ -108,7 +108,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		async updatePartial(
 			id: string,
-			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
 		): Promise<Booking | null> {
 			if (!ObjectId.isValid(id)) {
 				return null;
@@ -118,6 +118,8 @@ export class BookingMongoRepository implements IBookingRepository {
 			const set: any = { updatedAt: new Date() };
 			if (update.roomId) set.roomId = new ObjectId(update.roomId);
 			if (update.equipmentIds) set.equipmentIds = update.equipmentIds.map((e: any) => new ObjectId(e));
+			if (update.equipment) set.equipment = update.equipment;
+			if (update.makeupRooms) set.makeupRooms = update.makeupRooms;
 			if (update.start) set.start = new Date(update.start);
 			if (update.end) set.end = new Date(update.end);
 			if (typeof update.totalPrice !== 'undefined') set.totalPrice = update.totalPrice;
