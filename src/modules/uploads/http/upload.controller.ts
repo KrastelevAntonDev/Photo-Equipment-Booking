@@ -5,6 +5,7 @@ import fs from 'fs';
 
 import { RoomMongoRepository } from '@modules/rooms/infrastructure/room.mongo.repository';
 import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equipment.mongo.repository';
+import { MakeupRoomMongoRepository } from '@modules/makeup-rooms/infrastructure/makeup-room.mongo.repository';
 import { sanitizeFolderName } from '@shared/utils/folder.utils';
 
 type UploadType = 'room' | 'equipment';
@@ -12,7 +13,7 @@ type UploadType = 'room' | 'equipment';
 export class UploadController {
   private roomRepo = new RoomMongoRepository();
   private eqRepo = new EquipmentMongoRepository();
-
+	private makeupRoomRepo = new MakeupRoomMongoRepository()
   // Создаем multer с динамической директорией назначения
   private makeMulterStorage() {
     return multer({
@@ -146,8 +147,8 @@ export class UploadController {
       const type = String(req.query.type || '').toLowerCase() as UploadType;
       const id = String(req.query.id || '');
 
-      if (!type || !['room', 'equipment'].includes(type)) {
-        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment' });
+      if (!type || !['room', 'equipment', 'makeup-room'].includes(type)) {
+        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment|makeup-room' });
       }
       if (!id) {
         return res.status(400).json({ message: 'Missing id' });
@@ -178,7 +179,8 @@ export class UploadController {
         baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', safeFolderName);
         urlBase = `/public/uploads/rooms/${safeFolderName}`;
         console.log(`[upload] Multiple upload - Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
-      } else {
+      } 
+			else if (type === 'equipment') {
         const eq = await this.eqRepo.findById(id);
         if (!eq) {
           console.error(`[upload] Equipment not found: ${id}`);
@@ -189,7 +191,18 @@ export class UploadController {
         baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', safeFolderName);
         urlBase = `/public/uploads/equipment/${safeFolderName}`;
         console.log(`[upload] Multiple upload - Equipment: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
-      }
+      } else {
+				const makeupRoom = await this.makeupRoomRepo.findById(id);
+				if (!makeupRoom) {
+					console.error(`[upload] Makeup Room not found: ${id}`);
+					return res.status(404).json({ message: 'Makeup Room not found' });
+				}
+				entityName = makeupRoom.name;
+        const safeFolderName = sanitizeFolderName(entityName);
+        urlBase = `/public/uploads/makeup-room/${safeFolderName}`;
+        baseDir = path.join(projectRoot, 'public', 'uploads', 'makeup-room', safeFolderName);
+				console.log(`[upload] Multiple upload - Makeup Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
+			}
 
       (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
 
