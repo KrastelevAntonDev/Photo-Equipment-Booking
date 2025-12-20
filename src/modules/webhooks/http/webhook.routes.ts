@@ -132,6 +132,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
 
         // === НОВАЯ СИСТЕМА УВЕДОМЛЕНИЙ ===
         // Отправляем подтверждение оплаты через NotificationService
+        let notificationScheduled = false;
         try {
           const NotificationModule = require('@modules/notifications').default;
           const { BookingNotificationScheduler } = require('@modules/bookings/application/booking-notification.scheduler');
@@ -158,6 +159,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
 
             // Отправляем подтверждение оплаты
             await scheduler.sendPaymentConfirmation(booking, templateData);
+            notificationScheduled = true;
             console.log(`✅ Payment confirmation notification scheduled for booking ${booking._id}`);
           }
         } catch (notifErr: any) {
@@ -165,8 +167,8 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           // Fallback на старую систему SMS
         }
         
-        // Отправка SMS уведомления пользователю (LEGACY - оставляем как fallback)
-        try {
+        // Отправка SMS уведомления пользователю (LEGACY - только если новая система не сработала)
+        if (!notificationScheduled) { try {
 					console.log('Sending SMS notification for payment:', paymentSuccess.id);
 					
 					console.log('booking id:', paymentSuccess.metadata.bookingId);
@@ -178,14 +180,24 @@ router.post('/webhook', (async (req: Request, res: Response) => {
           if (booking && user && user.phone && room) {
 						console.log('found booking, user, and room for SMS notification');
 						
-            // Форматируем дату и время
+            // Форматируем дату и время (фиксируем часовой пояс на Europe/Moscow)
             const formatDate = (date: Date) => {
               const d = new Date(date);
-              return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              return new Intl.DateTimeFormat('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                timeZone: 'Europe/Moscow',
+              }).format(d);
             };
             const formatTime = (date: Date) => {
               const d = new Date(date);
-              return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+              return new Intl.DateTimeFormat('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Europe/Moscow',
+              }).format(d);
             };
             
             // Получаем ссылку на чек, если есть receipt_id
@@ -255,6 +267,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
         } catch (smsError: any) {
           console.error('Failed to send SMS notification:', smsError.message);
           // Не прерываем обработку webhook, если SMS не отправилась
+        }
         }
         
         console.log(`Payment succeeded: ${paymentSuccess.id}`);
