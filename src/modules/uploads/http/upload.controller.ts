@@ -107,20 +107,35 @@ export class UploadController {
               return res.status(500).json({ message: 'Failed to update room' });
             }
             console.log(`[upload] Room ${id} updated successfully`);
-          } else {
+          } else if (type === 'equipment') {
             const current = await this.eqRepo.findById(id);
             if (!current) {
               console.error(`[upload] Equipment not found: ${id}`);
               return res.status(404).json({ message: 'Equipment not found' });
             }
-            console.log(`[upload] Updating equipment ${id} with image:`, publicUrl);
-            const updated = await this.eqRepo.updateEquipment(id, { image: publicUrl });
+            const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
+            console.log(`[upload] Updating equipment ${id} with images:`, nextImages);
+            const updated = await this.eqRepo.updateEquipment(id, { images: nextImages });
             if (!updated) {
               console.error(`[upload] Failed to update equipment ${id}`);
               return res.status(500).json({ message: 'Failed to update equipment' });
             }
             console.log(`[upload] Equipment ${id} updated successfully`);
-          }
+          } else {
+            const current = await this.makeupRoomRepo.findById(id);
+            if (!current) {
+              console.error(`[upload] Makeup Room not found: ${id}`);
+              return res.status(404).json({ message: 'Makeup Room not found' });
+            }
+            const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
+            console.log(`[upload] Updating makeup room ${id} with images:`, nextImages);
+            const updated = await this.makeupRoomRepo.update(id, { images: nextImages });
+            if (!updated) {
+              console.error(`[upload] Failed to update makeup room ${id}`);
+              return res.status(500).json({ message: 'Failed to update makeup room' });
+            }
+            console.log(`[upload] Makeup Room ${id} updated successfully`);
+					}
         } catch (e: any) {
           console.error(`[upload] Error updating ${type} ${id}:`, e);
           return next(e);
