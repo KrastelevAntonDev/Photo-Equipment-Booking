@@ -8,40 +8,122 @@ import { EquipmentMongoRepository } from '@modules/equipment/infrastructure/equi
 import { MakeupRoomMongoRepository } from '@modules/makeup-rooms/infrastructure/makeup-room.mongo.repository';
 import { sanitizeFolderName } from '@shared/utils/folder.utils';
 
-type UploadType = 'room' | 'equipment';
+type UploadType = 'room' | 'equipment' | 'makeup-room';
+
+interface UploadTarget {
+  baseDir: string;
+  urlBase: string;
+  type: UploadType;
+  id: string;
+  entityName: string;
+}
+
+interface Entity {
+  name: string;
+  images?: string[];
+  image?: string;
+}
 
 export class UploadController {
   private roomRepo = new RoomMongoRepository();
   private eqRepo = new EquipmentMongoRepository();
-	private makeupRoomRepo = new MakeupRoomMongoRepository()
-  // Создаем multer с динамической директорией назначения
-  private makeMulterStorage() {
-    return multer({
-      storage: multer.diskStorage({
-        destination: (req, _file, cb) => {
-          const target = (req as any)._uploadTarget as { baseDir: string } | undefined;
-          if (!target) {
-            console.error('[upload] Upload target not resolved');
-            return cb(new Error('Upload target not resolved'), '');
-          }
-          console.log(`[upload] Creating directory: ${target.baseDir}`);
-          try {
-            fs.mkdirSync(target.baseDir, { recursive: true });
-            console.log(`[upload] Directory created: ${target.baseDir}`);
-          } catch (err: any) {
-            console.error(`[upload] Error creating directory ${target.baseDir}:`, err);
-            return cb(err, '');
-          }
-          cb(null, target.baseDir);
-        },
-        filename: (_req, file, cb) => {
-          const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
-          const safeOriginal = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-          cb(null, `${unique}-${safeOriginal}`);
-        }
-      }),
-      limits: { fileSize: 25 * 1024 * 1024 },
-    });
+  private makeupRoomRepo = new MakeupRoomMongoRepository();
+
+  private repos: Record<UploadType, any> = {
+    room: this.roomRepo,
+    equipment: this.eqRepo,
+    'makeup-room': this.makeupRoomRepo,
+  };
+
+  private updateMethods: Record<UploadType, (repo: any, id: string, data: any) => Promise<any>> = {
+    room: (repo, id, data) => repo.updateRoom(id, data),
+    equipment: (repo, id, data) => repo.updateEquipment(id, data),
+    'makeup-room': (repo, id, data) => repo.update(id, data),
+  };
+
+  private folderNames: Record<UploadType, string> = {
+    room: 'rooms',
+    equipment: 'equipment',
+    'makeup-room': 'makeup-room',
+  };
+
+  private getImageField(type: UploadType): 'images' | 'image' {
+    return type === 'equipment' ? 'image' : 'images';
+  }
+
+  private getProjectRoot(): string {
+    return path.join(__dirname, '..', '..', '..');
+  }
+
+  private async getEntity(type: UploadType, id: string): Promise<Entity> {
+    const repo = this.repos[type];
+    const entity = await repo.findById(id);
+    if (!entity) {
+      throw new Error(`${type.charAt(0).toUpperCase() + type.slice(1)} not found`);
+    }
+    return entity;
+  }
+
+  private async setupUploadTarget(req: Request, type: UploadType, id: string): Promise<{ baseDir: string; urlBase: string }> {
+    const entity = await this.getEntity(type, id);
+    const safeFolderName = sanitizeFolderName(entity.name);
+    const folderType = this.folderNames[type];
+    const projectRoot = this.getProjectRoot();
+    const baseDir = path.join(projectRoot, 'public', 'uploads', folderType, safeFolderName);
+    const urlBase = `/public/uploads/${folderType}/${safeFolderName}`;
+    (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName: entity.name } as UploadTarget;
+    return { baseDir, urlBase };
+  }
+
+  private storage = multer.diskStorage({
+    destination: (req: Request, _file, cb) => {
+      const target = (req as any)._uploadTarget as UploadTarget | undefined;
+      if (!target) {
+        console.error('[upload] Upload target not resolved');
+        return cb(new Error('Upload target not resolved'), '');
+      }
+      console.log(`[upload] Creating directory: ${target.baseDir}`);
+      try {
+        fs.mkdirSync(target.baseDir, { recursive: true });
+        console.log(`[upload] Directory created: ${target.baseDir}`);
+      } catch (err: any) {
+        console.error(`[upload] Error creating directory ${target.baseDir}:`, err);
+        return cb(err, '');
+      }
+      cb(null, target.baseDir);
+    },
+    filename: (_req, file, cb) => {
+      const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
+      const safeOriginal = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      cb(null, `${unique}-${safeOriginal}`);
+    },
+  });
+
+  private singleUploader = multer({ storage: this.storage, limits: { fileSize: 25 * 1024 * 1024 } }).single('image');
+  private multipleUploader = multer({ storage: this.storage, limits: { fileSize: 25 * 1024 * 1024 } }).array('images', 20);
+
+  private async updateEntityImages(type: UploadType, id: string, newUrls: string[]) {
+    const repo = this.repos[type];
+    const updateMethod = this.updateMethods[type];
+    const field = this.getImageField(type);
+    const current = await this.getEntity(type, id);
+    let updateData: any;
+
+    if (field === 'images') {
+      const currentImages = current.images || [];
+      const nextImages = Array.from(new Set([...currentImages, ...newUrls]));
+      updateData = { images: nextImages };
+      console.log(`[upload] Updating ${type} ${id} with images:`, nextImages);
+    } else {
+      updateData = { image: newUrls[0] };
+      console.log(`[upload] Updating ${type} ${id} with image:`, newUrls[0]);
+    }
+
+    const updated = await updateMethod(repo, id, updateData);
+    if (!updated) {
+      throw new Error(`Failed to update ${type}`);
+    }
+    console.log(`[upload] ${type.charAt(0).toUpperCase() + type.slice(1)} ${id} updated successfully`);
   }
 
   async uploadImage(req: Request, res: Response, next: NextFunction) {
@@ -49,93 +131,24 @@ export class UploadController {
       const type = String(req.query.type || '').toLowerCase() as UploadType;
       const id = String(req.query.id || '');
 
-      if (!type || !['room', 'equipment'].includes(type)) {
-        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment' });
+      if (!type || !Object.keys(this.repos).includes(type)) {
+        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment|makeup-room' });
       }
       if (!id) {
         return res.status(400).json({ message: 'Missing id' });
       }
 
-      let baseDir: string;
-      let urlBase: string;
-      let entityName: string | null = null;
+      await this.setupUploadTarget(req, type, id);
 
-      // Определяем корень проекта (dist в production, src в development)
-      const isProduction = process.env.NODE_ENV === 'production';
-      const projectRoot = isProduction 
-        ? path.join(__dirname, '..', '..', '..') // dist в production
-        : path.join(__dirname, '..', '..', '..'); // src в development
-      
-      if (type === 'room') {
-        const room = await this.roomRepo.findById(id);
-        if (!room) return res.status(404).json({ message: 'Room not found' });
-        entityName = room.name;
-        const safeFolderName = sanitizeFolderName(entityName);
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', safeFolderName);
-        urlBase = `/public/uploads/rooms/${safeFolderName}`;
-      } else {
-        const eq = await this.eqRepo.findById(id);
-        if (!eq) return res.status(404).json({ message: 'Equipment not found' });
-        entityName = eq.name;
-        const safeFolderName = sanitizeFolderName(entityName);
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', safeFolderName);
-        urlBase = `/public/uploads/equipment/${safeFolderName}`;
-      }
-
-      (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
-
-      const upload = this.makeMulterStorage().single('image');
-      upload(req, res, async (err: any) => {
+      this.singleUploader(req, res, async (err: any) => {
         if (err) return next(err);
         if (!req.file) return res.status(400).json({ message: 'Файл не получен. Поле: image' });
 
-        const target = (req as any)._uploadTarget as { baseDir: string; urlBase: string };
+        const target = (req as any)._uploadTarget as UploadTarget;
         const publicUrl = `${target.urlBase}/${req.file.filename}`;
 
         try {
-          if (type === 'room') {
-            const current = await this.roomRepo.findById(id);
-            if (!current) {
-              console.error(`[upload] Room not found: ${id}`);
-              return res.status(404).json({ message: 'Room not found' });
-            }
-            const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
-            console.log(`[upload] Updating room ${id} with images:`, nextImages);
-            const updated = await this.roomRepo.updateRoom(id, { images: nextImages });
-            if (!updated) {
-              console.error(`[upload] Failed to update room ${id}`);
-              return res.status(500).json({ message: 'Failed to update room' });
-            }
-            console.log(`[upload] Room ${id} updated successfully`);
-          } else if (type === 'equipment') {
-            const current = await this.eqRepo.findById(id);
-            if (!current) {
-              console.error(`[upload] Equipment not found: ${id}`);
-              return res.status(404).json({ message: 'Equipment not found' });
-            }
-            const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
-            console.log(`[upload] Updating equipment ${id} with images:`, nextImages);
-            const updated = await this.eqRepo.updateEquipment(id, { images: nextImages });
-            if (!updated) {
-              console.error(`[upload] Failed to update equipment ${id}`);
-              return res.status(500).json({ message: 'Failed to update equipment' });
-            }
-            console.log(`[upload] Equipment ${id} updated successfully`);
-          } else {
-            const current = await this.makeupRoomRepo.findById(id);
-            if (!current) {
-              console.error(`[upload] Makeup Room not found: ${id}`);
-              return res.status(404).json({ message: 'Makeup Room not found' });
-            }
-            const nextImages = Array.from(new Set([...(current.images || []), publicUrl]));
-            console.log(`[upload] Updating makeup room ${id} with images:`, nextImages);
-            const updated = await this.makeupRoomRepo.update(id, { images: nextImages });
-            if (!updated) {
-              console.error(`[upload] Failed to update makeup room ${id}`);
-              return res.status(500).json({ message: 'Failed to update makeup room' });
-            }
-            console.log(`[upload] Makeup Room ${id} updated successfully`);
-					}
+          await this.updateEntityImages(type, id, [publicUrl]);
         } catch (e: any) {
           console.error(`[upload] Error updating ${type} ${id}:`, e);
           return next(e);
@@ -148,8 +161,8 @@ export class UploadController {
             originalName: req.file.originalname,
             size: req.file.size,
             mimeType: req.file.mimetype,
-            filename: req.file.filename
-          }
+            filename: req.file.filename,
+          },
         });
       });
     } catch (e) {
@@ -162,110 +175,26 @@ export class UploadController {
       const type = String(req.query.type || '').toLowerCase() as UploadType;
       const id = String(req.query.id || '');
 
-      if (!type || !['room', 'equipment', 'makeup-room'].includes(type)) {
+      if (!type || !Object.keys(this.repos).includes(type)) {
         return res.status(400).json({ message: 'Invalid type. Use type=room|equipment|makeup-room' });
       }
       if (!id) {
         return res.status(400).json({ message: 'Missing id' });
       }
 
-      let baseDir: string;
-      let urlBase: string;
-      let entityName: string | null = null;
+      await this.setupUploadTarget(req, type, id);
 
-      // Определяем корень проекта (dist в production, src в development)
-      const isProduction = process.env.NODE_ENV === 'production';
-      const projectRoot = isProduction 
-        ? path.join(__dirname, '..', '..', '..') // dist в production
-        : path.join(__dirname, '..', '..', '..'); // src в development
-      
-      console.log(`[upload] Multiple upload - __dirname: ${__dirname}`);
-      console.log(`[upload] Multiple upload - NODE_ENV: ${process.env.NODE_ENV}`);
-      console.log(`[upload] Multiple upload - projectRoot: ${projectRoot}`);
-      
-      if (type === 'room') {
-        const room = await this.roomRepo.findById(id);
-        if (!room) {
-          console.error(`[upload] Room not found: ${id}`);
-          return res.status(404).json({ message: 'Room not found' });
-        }
-        entityName = room.name;
-        const safeFolderName = sanitizeFolderName(entityName);
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'rooms', safeFolderName);
-        urlBase = `/public/uploads/rooms/${safeFolderName}`;
-        console.log(`[upload] Multiple upload - Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
-      } 
-			else if (type === 'equipment') {
-        const eq = await this.eqRepo.findById(id);
-        if (!eq) {
-          console.error(`[upload] Equipment not found: ${id}`);
-          return res.status(404).json({ message: 'Equipment not found' });
-        }
-        entityName = eq.name;
-        const safeFolderName = sanitizeFolderName(entityName);
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'equipment', safeFolderName);
-        urlBase = `/public/uploads/equipment/${safeFolderName}`;
-        console.log(`[upload] Multiple upload - Equipment: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
-      } else {
-				const makeupRoom = await this.makeupRoomRepo.findById(id);
-				if (!makeupRoom) {
-					console.error(`[upload] Makeup Room not found: ${id}`);
-					return res.status(404).json({ message: 'Makeup Room not found' });
-				}
-				entityName = makeupRoom.name;
-        const safeFolderName = sanitizeFolderName(entityName);
-        urlBase = `/public/uploads/makeup-room/${safeFolderName}`;
-        baseDir = path.join(projectRoot, 'public', 'uploads', 'makeup-room', safeFolderName);
-				console.log(`[upload] Multiple upload - Makeup Room: ${entityName}, baseDir: ${baseDir}, urlBase: ${urlBase}`);
-			}
-
-      (req as any)._uploadTarget = { baseDir, urlBase, type, id, entityName };
-
-      const upload = this.makeMulterStorage().array('images', 20); // max 20 files
-      upload(req, res, async (err: any) => {
+      this.multipleUploader(req, res, async (err: any) => {
         if (err) return next(err);
         if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
           return res.status(400).json({ message: 'Файлы не получены. Поле: images' });
         }
 
-        const target = (req as any)._uploadTarget as { baseDir: string; urlBase: string };
-        const uploadedUrls: string[] = [];
-
-        for (const file of req.files) {
-          const publicUrl = `${target.urlBase}/${file.filename}`;
-          uploadedUrls.push(publicUrl);
-        }
+        const target = (req as any)._uploadTarget as UploadTarget;
+        const uploadedUrls: string[] = req.files.map((file: any) => `${target.urlBase}/${file.filename}`);
 
         try {
-          if (type === 'room') {
-            const current = await this.roomRepo.findById(id);
-            if (!current) {
-              console.error(`[upload] Room not found: ${id}`);
-              return res.status(404).json({ message: 'Room not found' });
-            }
-            const nextImages = Array.from(new Set([...(current.images || []), ...uploadedUrls]));
-            console.log(`[upload] Updating room ${id} with ${uploadedUrls.length} images:`, nextImages);
-            const updated = await this.roomRepo.updateRoom(id, { images: nextImages });
-            if (!updated) {
-              console.error(`[upload] Failed to update room ${id}`);
-              return res.status(500).json({ message: 'Failed to update room' });
-            }
-            console.log(`[upload] Room ${id} updated successfully`);
-          } else {
-            // Для equipment берём первую картинку
-            const current = await this.eqRepo.findById(id);
-            if (!current) {
-              console.error(`[upload] Equipment not found: ${id}`);
-              return res.status(404).json({ message: 'Equipment not found' });
-            }
-            console.log(`[upload] Updating equipment ${id} with image:`, uploadedUrls[0]);
-            const updated = await this.eqRepo.updateEquipment(id, { image: uploadedUrls[0] });
-            if (!updated) {
-              console.error(`[upload] Failed to update equipment ${id}`);
-              return res.status(500).json({ message: 'Failed to update equipment' });
-            }
-            console.log(`[upload] Equipment ${id} updated successfully`);
-          }
+          await this.updateEntityImages(type, id, uploadedUrls);
         } catch (e: any) {
           console.error(`[upload] Error updating ${type} ${id}:`, e);
           return next(e);
@@ -278,12 +207,28 @@ export class UploadController {
             originalName: f.originalname,
             size: f.size,
             mimeType: f.mimetype,
-            filename: f.filename
-          }))
+            filename: f.filename,
+          })),
         });
       });
     } catch (e) {
       next(e);
+    }
+  }
+
+  private async removeImageFromEntity(type: UploadType, id: string, imageUrl: string) {
+    const repo = this.repos[type];
+    const updateMethod = this.updateMethods[type];
+    const field = this.getImageField(type);
+    const current = await this.getEntity(type, id);
+
+    if (field === 'images') {
+      const images = (current.images || []).filter((url: string) => url !== imageUrl);
+      await updateMethod(repo, id, { images });
+    } else {
+      if (current.image === imageUrl) {
+        await updateMethod(repo, id, { image: '' });
+      }
     }
   }
 
@@ -293,8 +238,8 @@ export class UploadController {
       const id = String(req.query.id || '');
       const imageUrl = String(req.body.url || '');
 
-      if (!type || !['room', 'equipment'].includes(type)) {
-        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment' });
+      if (!type || !['room', 'equipment', 'makeup-room'].includes(type)) {
+        return res.status(400).json({ message: 'Invalid type. Use type=room|equipment|makeup-room' });
       }
       if (!id) {
         return res.status(400).json({ message: 'Missing id' });
@@ -303,56 +248,31 @@ export class UploadController {
         return res.status(400).json({ message: 'Missing url in body' });
       }
 
-      // Извлекаем путь к файлу из URL
-      // Формат: /public/uploads/rooms/NAME/filename.jpg
-      const urlMatch = imageUrl.match(/\/public\/uploads\/(rooms|equipment)\/([^/]+)\/(.+)$/);
+      const urlMatch = imageUrl.match(/\/public\/uploads\/(rooms|equipment|makeup-room)\/([^/]+)\/(.+)$/);
       if (!urlMatch) {
         return res.status(400).json({ message: 'Invalid image URL format' });
       }
 
       const [, urlType, entityNameEncoded, filename] = urlMatch;
-      const entityName = decodeURIComponent(entityNameEncoded);
-      const decodedFilename = decodeURIComponent(filename);
-
-      // Проверяем соответствие типа
-      if (urlType !== (type === 'room' ? 'rooms' : 'equipment')) {
+      const expectedUrlType = this.folderNames[type];
+      if (urlType !== expectedUrlType) {
         return res.status(400).json({ message: 'URL type mismatch' });
       }
 
-      // Определяем корень проекта (dist в production, src в development)
-      const isProduction = process.env.NODE_ENV === 'production';
-      const projectRoot = isProduction 
-        ? path.join(__dirname, '..', '..', '..') // dist в production
-        : path.join(__dirname, '..', '..', '..'); // src в development
+      const entityName = decodeURIComponent(entityNameEncoded);
+      const decodedFilename = decodeURIComponent(filename);
+      const projectRoot = this.getProjectRoot();
       const filePath = path.join(projectRoot, 'public', 'uploads', urlType, entityName, decodedFilename);
 
-      // Удаляем файл с диска
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
 
-      // Удаляем URL из базы
-      try {
-        if (type === 'room') {
-          const current = await this.roomRepo.findById(id);
-          if (!current) return res.status(404).json({ message: 'Room not found' });
-          const nextImages = (current.images || []).filter(url => url !== imageUrl);
-          await this.roomRepo.updateRoom(id, { images: nextImages });
-        } else {
-          const current = await this.eqRepo.findById(id);
-          if (!current) return res.status(404).json({ message: 'Equipment not found' });
-          // Для equipment если это текущая картинка — очищаем
-          if (current.image === imageUrl) {
-            await this.eqRepo.updateEquipment(id, { image: '' });
-          }
-        }
-      } catch (e: any) {
-        return next(e);
-      }
+      await this.removeImageFromEntity(type, id, imageUrl);
 
       return res.status(200).json({
         message: 'Изображение удалено',
-        url: imageUrl
+        url: imageUrl,
       });
     } catch (e) {
       next(e);
