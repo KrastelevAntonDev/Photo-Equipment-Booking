@@ -26,16 +26,15 @@ export class BookingNotificationScheduler {
     const bookingId = booking._id;
     const userId = booking.userId;
 
-    // 1. Предупреждение через 1 час (если не оплачено)
+    // 1. Предупреждение сразу же после создания бронирования (если не оплачено)
     if (booking.paymentStatus === 'unpaid') {
-      const warning1h = new Date(booking.createdAt.getTime() + 60 * 60 * 1000); // +1 час
       await this.notificationService.scheduleNotification(
         {
           bookingId,
           userId,
           type: NotificationType.PAYMENT_WARNING_1H,
           phoneNumber,
-          scheduledFor: warning1h,
+          scheduledFor: new Date(), // Отправляем сразу же
         },
         templateData
       );
