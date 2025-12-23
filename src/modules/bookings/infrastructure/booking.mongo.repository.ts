@@ -85,7 +85,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 	async updatePaymentInfo(
 		id: string,
-		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid'; isHalfPaid?: boolean }
+		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid'; isHalfPaid?: boolean; paymentUrl?: string }
 	): Promise<Booking | null> {
 		if (!ObjectId.isValid(id)) {
 			return null;
@@ -97,6 +97,7 @@ export class BookingMongoRepository implements IBookingRepository {
 			...('paidAmount' in payload ? { paidAmount: payload.paidAmount } : {}),
 			...('paymentStatus' in payload ? { paymentStatus: payload.paymentStatus } : {}),
 			...('isHalfPaid' in payload ? { isHalfPaid: payload.isHalfPaid } : {}),
+			...('paymentUrl' in payload ? { paymentUrl: payload.paymentUrl } : {}),
 			updatedAt: new Date(),
 		};
 		return this.getCollection().findOneAndUpdate(
@@ -108,7 +109,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		async updatePartial(
 			id: string,
-			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid' | 'paymentUrl'>
 		): Promise<Booking | null> {
 			if (!ObjectId.isValid(id)) {
 				return null;
@@ -129,6 +130,7 @@ export class BookingMongoRepository implements IBookingRepository {
 			if (typeof update.paymentStatus !== 'undefined') set.paymentStatus = update.paymentStatus;
 			if (typeof update.isHalfPaid !== 'undefined') set.isHalfPaid = update.isHalfPaid;
 			if (update.paymentMethod) set.paymentMethod = update.paymentMethod;
+			if (typeof update.paymentUrl !== 'undefined') set.paymentUrl = update.paymentUrl;
 
 			return this.getCollection().findOneAndUpdate(
 				{ _id },

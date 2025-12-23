@@ -32,6 +32,7 @@ export interface Booking {
   isPaid?: boolean;                               // признак полной оплаты
   paidAmount?: number;                            // сколько оплачено суммарно
   paymentStatus?: 'unpaid' | 'partial' | 'paid';  // состояние оплаты
+  paymentUrl?: string;                            // ссылка на оплату брони
   isHalfPaid?: boolean;                           // признак половинной оплаты (около 50%)
   user?: UserJwtPayload;                          // данные пользователя (для отображения без джоина)
   

@@ -153,6 +153,13 @@ router.post('/payments', optionalAuthMiddleware,  async (req: Request & { user?:
       // Add other fields from req.body as needed
     };
     const payment = await yookassaService.createPayment(payload);
+
+    // Сохраняем ссылку на оплату в брони, чтобы использовать в уведомлениях
+    const paymentUrl = payment.confirmation?.confirmation_url;
+    if (paymentUrl) {
+      await bookingService.setPaymentUrl(req.body.bookingId, paymentUrl);
+    }
+
     res.status(201).json(payment);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -280,6 +287,12 @@ router.post('/admin/payments', requireAdminLevel('partial'), validateDTO(AdminCr
     };
 
     const payment = await yookassaService.createPayment(payload);
+
+    // Сохраняем ссылку на оплату в бронировании
+    const paymentUrl = payment.confirmation?.confirmation_url;
+    if (paymentUrl) {
+      await bookingService.setPaymentUrl(bookingId, paymentUrl);
+    }
     
     res.status(201).json({
       payment,
@@ -384,6 +397,12 @@ router.post('/admin/payments/added-items', requireAdminLevel('partial'), validat
     };
 
     const payment = await yookassaService.createPayment(payload);
+
+    // Сохраняем ссылку на оплату в бронировании
+    const paymentUrl = payment.confirmation?.confirmation_url;
+    if (paymentUrl) {
+      await bookingService.setPaymentUrl(bookingId, paymentUrl);
+    }
     
     res.status(201).json({
       payment,

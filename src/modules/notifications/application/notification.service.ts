@@ -90,6 +90,12 @@ export class NotificationService {
       await this.initialize();
     }
 
+		// Попытка дополнить шаблон ссылкой на оплату, если она уже сохранена в бронировании
+		const templateDataWithPaymentUrl = await this.enrichTemplateDataWithPaymentUrl(
+			templateData,
+			payload.bookingId,
+		);
+
     // Проверяем, не существует ли уже такое уведомление
     const exists = await this.notificationRepository.exists(payload.bookingId, payload.type);
     if (exists) {
@@ -97,7 +103,7 @@ export class NotificationService {
     }
 
     // Генерируем сообщение
-    const message = this.templateService.generateMessage(payload.type, templateData);
+    const message = this.templateService.generateMessage(payload.type, templateDataWithPaymentUrl);
 
     // Создаём запись в БД
     const notification: NotificationEntity = {
@@ -111,7 +117,7 @@ export class NotificationService {
       scheduledFor: payload.scheduledFor,
       attempts: 0,
       maxAttempts: 3,
-      metadata: payload.metadata || { templateData },
+      metadata: payload.metadata || { templateData: templateDataWithPaymentUrl },
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -133,7 +139,7 @@ export class NotificationService {
         userId: payload.userId.toString(),
         type: payload.type,
         phoneNumber: payload.phoneNumber,
-        templateData,
+        templateData: templateDataWithPaymentUrl,
       },
       {
         delay,
@@ -178,8 +184,13 @@ export class NotificationService {
           : new Date(templateData.endDate),
       };
 
+      const enrichedTemplateData = await this.enrichTemplateDataWithPaymentUrl(
+        normalizedTemplateData,
+        job.data.bookingId,
+      );
+
       // Генерируем сообщение
-      const message = this.templateService.generateMessage(type, normalizedTemplateData);
+      const message = this.templateService.generateMessage(type, enrichedTemplateData);
 
       // Отправляем SMS
       const smsResult = await this.smsService.send({
@@ -224,6 +235,31 @@ export class NotificationService {
 
       throw error; // Bull автоматически повторит задачу
     }
+  }
+
+  /**
+   * Дополняем данные шаблона ссылкой на оплату, если она сохранена в бронировании
+   */
+  private async enrichTemplateDataWithPaymentUrl(
+    templateData: BookingTemplateData,
+    bookingId: ObjectId | string,
+  ): Promise<BookingTemplateData> {
+    if (templateData.paymentUrl) {
+      return templateData;
+    }
+
+    try {
+      const { BookingMongoRepository } = require('@modules/bookings/infrastructure/booking.mongo.repository');
+      const bookingRepository = new BookingMongoRepository();
+      const booking = await bookingRepository.findById(bookingId.toString());
+      if (booking?.paymentUrl) {
+        return { ...templateData, paymentUrl: booking.paymentUrl };
+      }
+    } catch (error: any) {
+      console.warn(`Failed to enrich template data with paymentUrl for booking ${bookingId}:`, error?.message || error);
+    }
+
+    return templateData;
   }
 
   /**

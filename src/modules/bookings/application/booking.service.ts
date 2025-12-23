@@ -486,6 +486,14 @@ export class BookingService {
 		return this.bookingRepository.updatePartial(id, update);
 	}
 
+	// Сохраняем ссылку на оплату для дальнейших уведомлений
+	async setPaymentUrl(bookingId: string, paymentUrl?: string): Promise<Booking | null> {
+		if (!paymentUrl) {
+			return this.bookingRepository.findById(bookingId);
+		}
+		return this.bookingRepository.updatePartial(bookingId, { paymentUrl });
+	}
+
 		// Регистрируем входящий платёж: увеличиваем paidAmount, пересчитываем статусы
 		async registerPayment(bookingId: string, amount: number): Promise<Booking | null> {
 			const booking = await this.bookingRepository.findById(bookingId);

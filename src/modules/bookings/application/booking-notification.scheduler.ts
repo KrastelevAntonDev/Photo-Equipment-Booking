@@ -162,6 +162,7 @@ export class BookingNotificationScheduler {
       paidAmount: booking.paidAmount || 0,
       remainingAmount: booking.totalPrice - (booking.paidAmount || 0),
       paymentStatus: booking.paymentStatus || 'unpaid',
+			paymentUrl: booking.paymentUrl,
     };
   }
 }

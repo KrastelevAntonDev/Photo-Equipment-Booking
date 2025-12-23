@@ -14,11 +14,11 @@ export interface IBookingRepository {
 	findBusySlots(roomId: string, rangeStart: any, rangeEnd: any): Promise<Booking[]>;
   updatePaymentInfo(
     id: string,
-		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid'; isHalfPaid?: boolean }
+		payload: { paymentMethod?: 'online' | 'on_site_cash' | 'on_site_card'; isPaid?: boolean; paidAmount?: number; paymentStatus?: 'unpaid' | 'partial' | 'paid'; isHalfPaid?: boolean; paymentUrl?: string }
   ): Promise<Booking | null>;
   updatePartial(
 		id: string,
-		update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid'>>
+		update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid' | 'paymentUrl'>>
   ): Promise<Booking | null>;
 }
 
