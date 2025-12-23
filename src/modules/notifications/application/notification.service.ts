@@ -184,10 +184,14 @@ export class NotificationService {
           : new Date(templateData.endDate),
       };
 
+      console.log(`🔍 Before enrichment - paymentUrl:`, normalizedTemplateData.paymentUrl);
+
       const enrichedTemplateData = await this.enrichTemplateDataWithPaymentUrl(
         normalizedTemplateData,
         job.data.bookingId,
       );
+
+      console.log(`🔍 After enrichment - paymentUrl:`, enrichedTemplateData.paymentUrl);
 
       // Генерируем сообщение
       const message = this.templateService.generateMessage(type, enrichedTemplateData);
@@ -244,7 +248,11 @@ export class NotificationService {
     templateData: BookingTemplateData,
     bookingId: ObjectId | string,
   ): Promise<BookingTemplateData> {
+    console.log(`🔍 enrichTemplateDataWithPaymentUrl called for booking ${bookingId}`);
+    console.log(`🔍 Input templateData.paymentUrl:`, templateData.paymentUrl);
+    
     if (templateData.paymentUrl) {
+      console.log(`🔍 paymentUrl already exists in templateData, returning as-is`);
       return templateData;
     }
 
@@ -252,6 +260,7 @@ export class NotificationService {
       const { BookingMongoRepository } = require('@modules/bookings/infrastructure/booking.mongo.repository');
       const bookingRepository = new BookingMongoRepository();
       const booking = await bookingRepository.findById(bookingId.toString());
+      console.log(`🔍 Loaded booking paymentUrl from DB:`, booking?.paymentUrl);
       if (booking?.paymentUrl) {
         return { ...templateData, paymentUrl: booking.paymentUrl };
       }
@@ -259,6 +268,7 @@ export class NotificationService {
       console.warn(`Failed to enrich template data with paymentUrl for booking ${bookingId}:`, error?.message || error);
     }
 
+    console.log(`🔍 Returning templateData without paymentUrl`);
     return templateData;
   }
 
