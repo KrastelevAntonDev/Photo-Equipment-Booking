@@ -109,7 +109,7 @@ export class BookingMongoRepository implements IBookingRepository {
 
 		async updatePartial(
 			id: string,
-			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid' | 'paymentUrl'>
+			update: Partial<Pick<Booking, 'roomId' | 'equipmentIds' | 'equipment' | 'makeupRooms' | 'start' | 'end' | 'status' | 'totalPrice' | 'paymentMethod' | 'isPaid' | 'paidAmount' | 'paymentStatus' | 'isHalfPaid' | 'paymentUrl'>>
 		): Promise<Booking | null> {
 			if (!ObjectId.isValid(id)) {
 				return null;
