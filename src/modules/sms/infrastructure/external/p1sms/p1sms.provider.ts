@@ -1,9 +1,10 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, isAxiosError } from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 import { env } from '@config/env';
 import { P1SmsCreateRequest, P1SmsCreateResponse, P1SmsProvider, P1SmsStatusResponse, P1SmsUploadImageResponse } from '../../../domain/sms.provider';
+import { log } from 'console';
 
 export class P1SmsHttpProvider implements P1SmsProvider {
   private client: AxiosInstance;
@@ -18,9 +19,21 @@ export class P1SmsHttpProvider implements P1SmsProvider {
   async create(payload: P1SmsCreateRequest): Promise<P1SmsCreateResponse> {
     const body = { ...payload, apiKey: this.apiKey };
 		console.log('Sending SMS with payload:', body);
-    const { data } = await this.client.post('/apiSms/create', body, { headers: { 'Content-Type': 'application/json' } });
-		console.log('Received response from SMS provider:', data);
-    return data as P1SmsCreateResponse;
+		try {
+    const { data } = await this.client.post<P1SmsCreateResponse>('/apiSms/create', body, { headers: { 'Content-Type': 'application/json' } });
+			return data;
+		} catch (error) {
+			if(isAxiosError(error)) {
+				log('Error response from SMS provider:', error.response?.data);
+				log('Error status:', error.response?.status);
+				log('Error headers:', error.response?.headers);
+				log('Error message:', error.message);
+				log('Error config:', error.config);
+				log('Full error object:', error.response?.data.data);
+			}
+			
+			throw error;
+		}
   }
 
   async loadImage(filePath: string): Promise<P1SmsUploadImageResponse> {
