@@ -20,7 +20,11 @@ export class P1SmsHttpProvider implements P1SmsProvider {
     const body = { ...payload, apiKey: this.apiKey };
 		console.log('Sending SMS with payload:', body);
 		try {
-    const { data } = await this.client.post<P1SmsCreateResponse>('/apiSms/create', body, { headers: { 'Content-Type': 'application/json' } });
+			let fullBody = {
+				...body,
+				sender: 'VIRTA'
+			}
+    	const { data } = await this.client.post<P1SmsCreateResponse>('/apiSms/create', fullBody, { headers: { 'Content-Type': 'application/json' } });
 			return data;
 		} catch (error) {
 			if(isAxiosError(error)) {
