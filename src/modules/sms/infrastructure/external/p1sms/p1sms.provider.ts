@@ -20,9 +20,13 @@ export class P1SmsHttpProvider implements P1SmsProvider {
     const body = { ...payload, apiKey: this.apiKey };
 		console.log('Sending SMS with payload:', body);
 		try {
+			body.sms[0].sender = 'VIRTA'
 			let fullBody = {
 				...body,
-				sender: 'VIRTA'
+				sms: body.sms.map(s => ({
+					...s,
+					sender: s.sender || 'VIRTA'
+				}))
 			}
     	const { data } = await this.client.post<P1SmsCreateResponse>('/apiSms/create', fullBody, { headers: { 'Content-Type': 'application/json' } });
 			return data;
