@@ -201,7 +201,7 @@ export class NotificationService {
         sms: [{
           phone: phoneNumber,
           text: message,
-          channel: 'digit',
+          channel: 'char',
         }],
       });
 

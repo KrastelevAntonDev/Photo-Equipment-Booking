@@ -250,7 +250,7 @@ router.post('/webhook', (async (req: Request, res: Response) => {
               await smsService.send({
                 sms: [{
                   phone,
-                  channel: 'digit',
+                  channel: 'char',
                   text: smsText,
                   tag: 'booking_paid',
                   link: link, // Ссылка для замены #shorturl#
