@@ -1,5 +1,6 @@
 import { IsString, IsNumber, IsArray, IsOptional, IsBoolean, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { RoomPricingDto } from './room-pricing.dto';
 
 export class UpdateRoomDTO {
   @IsString()
@@ -53,12 +54,8 @@ export class UpdateRoomDTO {
 
   @IsOptional()
   @ValidateNested()
-  @Type(() => Object)
-  pricing?: {
-    weekday_00_12?: number;
-    weekday_12_24?: number;
-    weekend_holiday_00_24?: number;
-  };
+  @Type(() => RoomPricingDto)
+  pricing?: RoomPricingDto;
 
   @IsArray()
   @IsString({ each: true })
