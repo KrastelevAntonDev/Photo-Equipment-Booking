@@ -554,12 +554,15 @@ export class BookingService {
 			}
 		}
 
-		// Рассчитываем стоимость оборудования: цена за сутки * quantity (НЕ зависит от длительности)
+		// Вычисляем длительность бронирования в часах
+		const bookingDurationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+
+		// Рассчитываем стоимость оборудования: цена за час * quantity * часы бронирования
 		let equipmentTotalPrice = 0;
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
-			equipmentTotalPrice += eq.pricePerDay * item.quantity;
+			equipmentTotalPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
 		}
 
 		// Итерация по часовым сегментам для расчёта стоимости зала (только зал зависит от длительности)
@@ -613,12 +616,15 @@ export class BookingService {
 			}
 		}
 
-		// Рассчитываем стоимость оборудования: цена за сутки * quantity
+		// Вычисляем длительность бронирования в часах
+		const bookingDurationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+
+		// Рассчитываем стоимость оборудования: цена за час * quantity * часы бронирования
 		let equipmentTotalPrice = 0;
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
-			equipmentTotalPrice += eq.pricePerDay * item.quantity;
+			equipmentTotalPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
 		}
 
 		// Рассчитываем стоимость гримерных: цена за час * quantity * hours
@@ -807,6 +813,9 @@ export class BookingService {
 			throw new Error('Cannot add items to cancelled or deleted booking');
 		}
 
+		// Вычисляем длительность бронирования в часах
+		const bookingDurationHours = (new Date(booking.end).getTime() - new Date(booking.start).getTime()) / (1000 * 60 * 60);
+
 		// Проверка и расчет стоимости нового оборудования
 		let additionalEquipmentPrice = 0;
 		const newEquipment: Array<{ equipmentId: ObjectId; quantity: number }> = [];
@@ -824,7 +833,7 @@ export class BookingService {
 					}
 				}
 
-				additionalEquipmentPrice += eq.pricePerDay * item.quantity;
+				additionalEquipmentPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
 				newEquipment.push({
 					equipmentId: new ObjectId(item.equipmentId),
 					quantity: item.quantity
