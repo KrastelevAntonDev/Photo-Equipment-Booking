@@ -590,7 +590,7 @@ export class BookingService {
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
-			equipmentTotalPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
+			equipmentTotalPrice += eq.pricePerDay * item.quantity;
 		}
 
 		// Итерация по часовым сегментам для расчёта стоимости зала (только зал зависит от длительности)
@@ -652,7 +652,7 @@ export class BookingService {
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
 			if (!eq) throw new Error(`Equipment not found: ${item.equipmentId}`);
-			equipmentTotalPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
+			equipmentTotalPrice += eq.pricePerDay * item.quantity;
 		}
 
 		// Рассчитываем стоимость гримерных: цена за час * quantity * hours
