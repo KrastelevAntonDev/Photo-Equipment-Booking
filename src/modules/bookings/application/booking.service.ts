@@ -428,6 +428,9 @@ export class BookingService {
 				Booking,
 				| "roomId"
 				| "equipmentIds"
+				| "equipment"
+				| "makeupRooms"
+				| "people"
 				| "start"
 				| "end"
 				| "status"
@@ -468,18 +471,43 @@ export class BookingService {
 			typeof update.totalPrice === 'undefined' &&
 			(typeof update.roomId !== 'undefined' ||
 				typeof update.equipmentIds !== 'undefined' ||
+				typeof update.equipment !== 'undefined' ||
+				typeof update.makeupRooms !== 'undefined' ||
+				typeof update.people !== 'undefined' ||
 				typeof update.start !== 'undefined' ||
 				typeof update.end !== 'undefined');
 
 		if (needReprice) {
 			const targetRoomId = (update.roomId || existing.roomId).toString();
-			const targetEquip = (update.equipmentIds || existing.equipmentIds || []).map((e: any) => e.toString());
-			const computedTotal = await this.computeTotalPrice(
+			
+			// Используем новый формат equipment с quantity
+			const targetEquipment = (update.equipment || existing.equipment || []).map((item: any) => ({
+				equipmentId: typeof item.equipmentId === 'string' ? item.equipmentId : item.equipmentId.toString(),
+				quantity: item.quantity || 1
+			}));
+			
+			// Используем makeupRooms если есть
+			const targetMakeupRooms = (update.makeupRooms || existing.makeupRooms || []).map((item: any) => ({
+				makeupRoomId: typeof item.makeupRoomId === 'string' ? item.makeupRoomId : item.makeupRoomId.toString(),
+				quantity: item.quantity || 1,
+				hours: item.hours || 1
+			}));
+			
+			// Используем новый метод расчета с учетом equipment и makeupRooms
+			let computedTotal = await this.computeTotalPriceWithEquipmentAndMakeup(
 				targetRoomId,
-				targetEquip,
+				targetEquipment,
+				targetMakeupRooms,
 				newStart,
 				newEnd
 			);
+			
+			// Применяем наценку за количество людей
+			const targetPeople = update.people || existing.people;
+			if (targetPeople) {
+				computedTotal = this.calculatePeopleSurcharge(computedTotal, targetPeople);
+			}
+			
 			update.totalPrice = computedTotal;
 		}
 
