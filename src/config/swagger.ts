@@ -503,7 +503,7 @@ export const openapiSpec: OpenAPIV3_1.Document = {
           _id: { type: 'string', description: 'ObjectId' },
           name: { type: 'string', description: 'Название оборудования' },
           description: { type: 'string', description: 'Описание оборудования' },
-          pricePerDay: { type: 'number', description: 'Цена за час аренды оборудования. Стоимость умножается на количество часов бронирования.' },
+          pricePerDay: { type: 'number', description: 'Фиксированная цена оборудования за всё время бронирования (не зависит от длительности). Клиент платит эту сумму независимо от того, бронирует он на 1 час или на 8 часов.' },
           image: { type: 'string', description: 'URL основного изображения (устаревшее поле)' },
           images: { type: 'array', items: { type: 'string' }, description: 'Массив URLs изображений в определённом порядке' },
           totalQuantity: { type: 'number', minimum: 0, description: 'Общее количество единиц оборудования в наличии' },

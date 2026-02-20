@@ -582,10 +582,7 @@ export class BookingService {
 			}
 		}
 
-		// Вычисляем длительность бронирования в часах
-		const bookingDurationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-
-		// Рассчитываем стоимость оборудования: цена за час * quantity * часы бронирования
+		// Рассчитываем стоимость оборудования: фиксированная цена * quantity (НЕ зависит от длительности)
 		let equipmentTotalPrice = 0;
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
@@ -644,10 +641,7 @@ export class BookingService {
 			}
 		}
 
-		// Вычисляем длительность бронирования в часах
-		const bookingDurationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-
-		// Рассчитываем стоимость оборудования: цена за час * quantity * часы бронирования
+		// Рассчитываем стоимость оборудования: фиксированная цена * quantity (НЕ зависит от длительности)
 		let equipmentTotalPrice = 0;
 		for (const item of equipment) {
 			const eq = await this.equipmentRepository.findById(item.equipmentId.toString());
@@ -841,9 +835,6 @@ export class BookingService {
 			throw new Error('Cannot add items to cancelled or deleted booking');
 		}
 
-		// Вычисляем длительность бронирования в часах
-		const bookingDurationHours = (new Date(booking.end).getTime() - new Date(booking.start).getTime()) / (1000 * 60 * 60);
-
 		// Проверка и расчет стоимости нового оборудования
 		let additionalEquipmentPrice = 0;
 		const newEquipment: Array<{ equipmentId: ObjectId; quantity: number }> = [];
@@ -861,7 +852,7 @@ export class BookingService {
 					}
 				}
 
-				additionalEquipmentPrice += eq.pricePerDay * item.quantity * bookingDurationHours;
+				additionalEquipmentPrice += eq.pricePerDay * item.quantity;
 				newEquipment.push({
 					equipmentId: new ObjectId(item.equipmentId),
 					quantity: item.quantity
