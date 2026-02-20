@@ -64,6 +64,7 @@ export interface NotificationEntity {
   attempts: number;            // Количество попыток
   maxAttempts: number;         // Максимум попыток
   lastError?: string;          // Последняя ошибка
+  cancelReason?: string;       // Причина отмены
   
   // Job tracking
   jobId?: string;              // ID задачи в Bull Queue

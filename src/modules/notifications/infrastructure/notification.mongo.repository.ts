@@ -84,6 +84,7 @@ export class NotificationMongoRepository implements NotificationRepository {
       lastError?: string;
       attempts?: number;
       jobId?: string;
+      cancelReason?: string;
     }
   ): Promise<void> {
     const collection = this.getCollection();
@@ -96,6 +97,7 @@ export class NotificationMongoRepository implements NotificationRepository {
     if (data?.lastError) updateFields.lastError = data.lastError;
     if (data?.attempts !== undefined) updateFields.attempts = data.attempts;
     if (data?.jobId) updateFields.jobId = data.jobId;
+    if (data?.cancelReason) updateFields.cancelReason = data.cancelReason;
 
     await collection.updateOne({ _id: id }, { $set: updateFields });
   }

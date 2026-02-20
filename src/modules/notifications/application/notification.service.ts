@@ -173,6 +173,49 @@ export class NotificationService {
         attempts: job.attemptsMade + 1,
       });
 
+      // КРИТИЧЕСКАЯ ПРОВЕРКА: для уведомлений об отмене брони проверяем актуальный статус оплаты
+      if (type === NotificationType.PAYMENT_CANCELLED_2H || type === NotificationType.PAYMENT_WARNING_1H) {
+        const { BookingService } = require('@modules/bookings/application/booking.service');
+        const bookingService = new BookingService();
+        const booking = await bookingService.getBookingById(job.data.bookingId);
+        
+        if (!booking) {
+          console.warn(`⚠️ Booking ${job.data.bookingId} not found, skipping notification`);
+          await this.notificationRepository.markAsFailed(objId, 'Booking not found', job.attemptsMade + 1);
+          return {
+            notificationId: objId,
+            success: false,
+            error: 'Booking not found',
+          };
+        }
+
+        // Если бронь уже оплачена (полностью или частично), не отправляем уведомление об отмене
+        if (booking.paymentStatus === 'paid' || booking.paymentStatus === 'partial') {
+          console.log(`✅ Booking ${job.data.bookingId} already paid (${booking.paymentStatus}), skipping ${type} notification`);
+          await this.notificationRepository.updateStatus(objId, NotificationStatus.CANCELLED, {
+            cancelReason: `Booking already paid: ${booking.paymentStatus}`,
+          });
+          return {
+            notificationId: objId,
+            success: false,
+            error: 'Booking already paid',
+          };
+        }
+
+        // Если бронь отменена или удалена, не отправляем уведомление
+        if (booking.status === 'cancelled' || booking.isDeleted) {
+          console.log(`✅ Booking ${job.data.bookingId} already cancelled/deleted, skipping ${type} notification`);
+          await this.notificationRepository.updateStatus(objId, NotificationStatus.CANCELLED, {
+            cancelReason: `Booking status: ${booking.status}`,
+          });
+          return {
+            notificationId: objId,
+            success: false,
+            error: 'Booking already cancelled',
+          };
+        }
+      }
+
       // Восстанавливаем Date объекты из строк (после сериализации из Redis)
       const normalizedTemplateData = {
         ...templateData,

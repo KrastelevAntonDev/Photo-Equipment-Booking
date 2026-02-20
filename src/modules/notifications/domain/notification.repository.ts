@@ -47,6 +47,7 @@ export interface NotificationRepository {
       lastError?: string;
       attempts?: number;
       jobId?: string;
+      cancelReason?: string;
     }
   ): Promise<void>;
 
